@@ -4,11 +4,18 @@ import { Dashboard } from "./pages/Dashboard";
 import { Analytics } from "./pages/Analytics";
 import { CalendarPage } from "./pages/Calendar";
 import { SettingsPage } from "./pages/Settings";
+import { AuthPage } from "./pages/Auth";
+import { RequireAuth } from "./components/auth/RequireAuth";
 
 export const router = createBrowserRouter([
+  { path: "/login", element: <AuthPage /> },
   {
     path: "/",
-    element: <AppShell />,
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <Dashboard /> },
       { path: "analytics", element: <Analytics /> },

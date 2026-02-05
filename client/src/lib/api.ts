@@ -1,4 +1,5 @@
 import type { Goal, GoalInput, GoalUpdate, ProgressEvent, ProgressInput } from "../types/goals";
+import { authStorage } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
@@ -11,9 +12,11 @@ class ApiError extends Error {
 }
 
 const apiFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
+  const token = authStorage.getToken();
   const res = await fetch(`${API_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers ?? {}),
     },
     ...options,
@@ -52,4 +55,23 @@ export const goalsApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+};
+
+export const authApi = {
+  register: (payload: { email: string; password: string }) =>
+    apiFetch<{ token: string; user: { id: string; email: string } }>(
+      "/auth/register",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    ),
+  login: (payload: { email: string; password: string }) =>
+    apiFetch<{ token: string; user: { id: string; email: string } }>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    ),
 };
