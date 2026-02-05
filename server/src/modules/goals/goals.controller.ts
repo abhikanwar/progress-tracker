@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { goalsService } from "./goals.service";
+import { goalsService } from "./goals.service.js";
 
 export const goalsController = {
   list: async (_req: Request, res: Response) => {

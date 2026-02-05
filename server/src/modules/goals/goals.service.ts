@@ -1,5 +1,5 @@
 import type { GoalStatus } from "@prisma/client";
-import { goalsRepo } from "./goals.repo";
+import { goalsRepo } from "./goals.repo.js";
 
 export const goalsService = {
   list: () => goalsRepo.list(),

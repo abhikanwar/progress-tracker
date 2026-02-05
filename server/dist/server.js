@@ -1,9 +1,7 @@
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
-
 const app = createApp();
-
 app.listen(env.port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server listening on :${env.port}`);
+    // eslint-disable-next-line no-console
+    console.log(`Server listening on :${env.port}`);
 });
