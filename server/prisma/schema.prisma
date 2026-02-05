@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Goal {
+  id               String          @id @default(uuid())
+  title            String
+  details          String?
+  status           GoalStatus      @default(ACTIVE)
+  targetDate       DateTime?
+  currentProgress  Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  progressEvents   ProgressEvent[]
+
+  @@index([status])
+  @@index([targetDate])
+}
+
+model ProgressEvent {
+  id        String   @id @default(uuid())
+  goalId    String
+  value     Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([createdAt])
+}
