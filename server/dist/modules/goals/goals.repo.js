@@ -1,4 +1,4 @@
-import { prisma } from "../../db/prisma";
+import { prisma } from "../../db/prisma.js";
 export const goalsRepo = {
     list: () => prisma.goal.findMany({
         orderBy: [{ updatedAt: "desc" }],

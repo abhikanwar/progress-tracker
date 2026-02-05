@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { asyncHandler } from "../../utils/http";
+import type { NextFunction, Request, Response } from "express";
+import { asyncHandler } from "../../utils/http.js";
 import { goalsController } from "./goals.controller.js";
 import { addProgressSchema, createGoalSchema, updateGoalSchema } from "./goals.validation.js";
 
@@ -10,7 +11,7 @@ goalsRouter.get("/:id", asyncHandler(goalsController.getById));
 
 goalsRouter.post(
   "/",
-  asyncHandler(async (req, _res, next) => {
+  asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
     req.body = createGoalSchema.parse(req.body);
     next();
   }),
@@ -19,7 +20,7 @@ goalsRouter.post(
 
 goalsRouter.put(
   "/:id",
-  asyncHandler(async (req, _res, next) => {
+  asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
     req.body = updateGoalSchema.parse(req.body);
     next();
   }),
@@ -28,7 +29,7 @@ goalsRouter.put(
 
 goalsRouter.post(
   "/:id/progress",
-  asyncHandler(async (req, _res, next) => {
+  asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
     req.body = addProgressSchema.parse(req.body);
     next();
   }),

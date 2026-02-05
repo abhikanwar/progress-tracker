@@ -1,4 +1,4 @@
-import { prisma } from "../../db/prisma";
+import { prisma } from "../../db/prisma.js";
 import type { GoalStatus } from "@prisma/client";
 
 export const goalsRepo = {

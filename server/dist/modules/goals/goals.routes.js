@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { asyncHandler } from "../../utils/http";
+import { asyncHandler } from "../../utils/http.js";
 import { goalsController } from "./goals.controller.js";
 import { addProgressSchema, createGoalSchema, updateGoalSchema } from "./goals.validation.js";
 export const goalsRouter = Router();
