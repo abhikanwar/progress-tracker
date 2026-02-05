@@ -3,8 +3,11 @@ import type { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../../utils/http.js";
 import { goalsController } from "./goals.controller.js";
 import { addProgressSchema, createGoalSchema, updateGoalSchema } from "./goals.validation.js";
+import { requireAuth } from "../../middlewares/auth.js";
 
 export const goalsRouter = Router();
+
+goalsRouter.use(requireAuth);
 
 goalsRouter.get("/", asyncHandler(goalsController.list));
 goalsRouter.get("/:id", asyncHandler(goalsController.getById));

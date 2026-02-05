@@ -1,27 +1,29 @@
 import { goalsRepo } from "./goals.repo.js";
 export const goalsService = {
-    list: () => goalsRepo.list(),
-    getById: (id) => goalsRepo.getById(id),
-    create: (input) => goalsRepo.create({
+    list: (userId) => goalsRepo.list(userId),
+    getById: (userId, id) => goalsRepo.getById(userId, id),
+    create: (userId, input) => goalsRepo.create({
+        userId,
         title: input.title,
         details: input.details,
         targetDate: input.targetDate ? new Date(input.targetDate) : undefined,
     }),
-    update: (id, input) => goalsRepo.update(id, {
+    update: (userId, id, input) => goalsRepo.update(id, {
+        userId,
         title: input.title,
         details: input.details,
         status: input.status,
         targetDate: input.targetDate ? new Date(input.targetDate) : undefined,
         currentProgress: input.currentProgress,
     }),
-    addProgress: async (id, input) => {
-        const event = await goalsRepo.addProgressEvent({
+    addProgress: async (userId, id, input) => {
+        const event = await goalsRepo.addProgressEvent(userId, {
             goalId: id,
             value: input.value,
             note: input.note,
         });
-        await goalsRepo.update(id, { currentProgress: input.value });
+        await goalsRepo.update(id, { userId, currentProgress: input.value });
         return event;
     },
-    remove: (id) => goalsRepo.delete(id),
+    remove: (userId, id) => goalsRepo.delete(userId, id),
 };

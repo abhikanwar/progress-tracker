@@ -15,6 +15,7 @@ enum GoalStatus {
 
 model Goal {
   id               String          @id @default(uuid())
+  userId           String
   title            String
   details          String?
   status           GoalStatus      @default(ACTIVE)
@@ -23,9 +24,12 @@ model Goal {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   progressEvents   ProgressEvent[]
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([targetDate])
+  @@index([userId])
+  @@unique([id, userId])
 }
 
 model ProgressEvent {
@@ -39,4 +43,13 @@ model ProgressEvent {
 
   @@index([goalId])
   @@index([createdAt])
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  goals        Goal[]
 }
