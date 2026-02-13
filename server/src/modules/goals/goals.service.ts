@@ -53,7 +53,12 @@ export const goalsService = {
     await goalsRepo.update(id, {
       userId,
       currentProgress: input.value,
-      status: input.value === 100 && goal.status !== "ARCHIVED" ? "COMPLETED" : undefined,
+      status:
+        goal.status === "ARCHIVED"
+          ? undefined
+          : input.value >= 100
+            ? "COMPLETED"
+            : "ACTIVE",
     });
 
     return event;

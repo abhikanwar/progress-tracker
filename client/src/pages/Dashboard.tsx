@@ -53,11 +53,18 @@ const sortOptions = [
 ] as const;
 type SortOption = (typeof sortOptions)[number]["value"];
 
+const getEffectiveStatus = (
+  goal: Pick<Goal, "status" | "currentProgress">
+): GoalStatus => {
+  if (goal.status === "ARCHIVED") return "ARCHIVED";
+  return goal.currentProgress >= 100 ? "COMPLETED" : "ACTIVE";
+};
+
 const getDueState = (
-  goal: Pick<Goal, "status" | "targetDate">,
+  goal: Pick<Goal, "status" | "targetDate" | "currentProgress">,
   timezone: string
 ): "OVERDUE" | "DUE_SOON" | null => {
-  if (!goal.targetDate || goal.status !== "ACTIVE") return null;
+  if (!goal.targetDate || getEffectiveStatus(goal) !== "ACTIVE") return null;
   const diffDays = getDayDifferenceFromTodayInTimezone(goal.targetDate, timezone);
   if (diffDays === null) return null;
 
@@ -84,7 +91,7 @@ const DueBadge = ({
   goal,
   timezone,
 }: {
-  goal: Pick<Goal, "status" | "targetDate">;
+  goal: Pick<Goal, "status" | "targetDate" | "currentProgress">;
   timezone: string;
 }) => {
   const state = getDueState(goal, timezone);
@@ -183,7 +190,8 @@ export const Dashboard = () => {
 
   const filteredGoals = useMemo(() => {
     const filtered = goals.filter((goal) => {
-      const matchesStatus = status === "ALL" || goal.status === status;
+      const effectiveStatus = getEffectiveStatus(goal);
+      const matchesStatus = status === "ALL" || effectiveStatus === status;
       const dueState = getDueState(goal, timezone);
       const matchesDueFilter =
         dueFilter === "ALL" ||
@@ -215,7 +223,7 @@ export const Dashboard = () => {
   }, [dueFilter, goals, search, selectedTagId, sortBy, status, timezone]);
 
   const weeklyPlan = useMemo(() => {
-    const activeGoals = goals.filter((goal) => goal.status === "ACTIVE");
+    const activeGoals = goals.filter((goal) => getEffectiveStatus(goal) === "ACTIVE");
 
     const getPriorityScore = (goal: Goal) => {
       let score = 0;
@@ -649,7 +657,7 @@ export const Dashboard = () => {
                             <CardTitle>{goal.title}</CardTitle>
                             <CardDescription>{goal.details || "No details yet."}</CardDescription>
                           </div>
-                          <StatusBadge status={goal.status} />
+                          <StatusBadge status={getEffectiveStatus(goal)} />
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -784,16 +792,13 @@ export const Dashboard = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          {[0, 25, 50, 75, 100].map((value) => (
-                            <Button
-                              key={value}
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openProgressDialog(goal, value)}
-                            >
-                              {value}%
-                            </Button>
-                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openProgressDialog(goal, goal.currentProgress)}
+                          >
+                            Update progress
+                          </Button>
                         </div>
                       </CardContent>
                       <div className="flex items-center justify-between px-4 pb-4">
@@ -882,17 +887,23 @@ export const Dashboard = () => {
 
           <div className="mt-4 grid gap-4">
             <div className="grid gap-2">
-              <Label>Progress value</Label>
-              <Input
-                type="number"
+              <div className="flex items-center justify-between">
+                <Label htmlFor="progress-slider">Progress value</Label>
+                <span className="text-sm font-medium">{progressValue}%</span>
+              </div>
+              <input
+                id="progress-slider"
+                type="range"
                 min={0}
                 max={100}
+                step={1}
                 value={progressValue}
                 onChange={(event) =>
                   setProgressValue(
                     Math.max(0, Math.min(100, Number.parseInt(event.target.value || "0", 10)))
                   )
                 }
+                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-foreground"
               />
             </div>
             <div className="grid gap-2">

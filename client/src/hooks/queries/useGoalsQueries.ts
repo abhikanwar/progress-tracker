@@ -157,6 +157,12 @@ export const useAddProgressMutation = () => {
             ? {
                 ...goal,
                 currentProgress: payload.value,
+                status:
+                  payload.value >= 100
+                    ? "COMPLETED"
+                    : goal.status === "COMPLETED"
+                      ? "ACTIVE"
+                      : goal.status,
                 updatedAt: now,
                 progressEvents: [
                   {
@@ -193,6 +199,7 @@ export const useAddProgressMutation = () => {
             : goal
         )
       );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.goals.list() });
     },
   });
 };

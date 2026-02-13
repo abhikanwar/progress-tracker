@@ -20,7 +20,10 @@ const MobileQuickActions = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [action, setAction] = useState<"goal" | "progress" | "milestone">("goal");
   const goalsQuery = useGoalsListQuery();
-  const goals = (goalsQuery.data ?? []).filter((goal) => goal.status === "ACTIVE");
+  const goals = (goalsQuery.data ?? []).filter((goal) => {
+    if (goal.status === "ARCHIVED") return false;
+    return goal.currentProgress < 100;
+  });
   const loadingGoals = goalsQuery.isLoading;
   const [selectedGoalId, setSelectedGoalId] = useState("");
   const [goalTitle, setGoalTitle] = useState("");
