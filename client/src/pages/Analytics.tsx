@@ -283,14 +283,14 @@ export const Analytics = () => {
                 28-day activity
               </p>
               <div className="mt-3 overflow-x-auto">
-                <div className="grid min-w-[560px] grid-cols-7 gap-2">
+                <div className="grid min-w-0 grid-cols-7 gap-1.5 sm:gap-2">
                   {activity.days.map((day) => {
                     const intensity =
                       day.count >= 4 ? "bg-foreground" : day.count >= 2 ? "bg-foreground/60" : "";
                     return (
                       <div
                         key={day.key}
-                        className={`h-12 rounded-xl ${
+                        className={`h-9 rounded-lg sm:h-12 sm:rounded-xl ${
                           day.count === 0 ? "bg-muted" : intensity
                         }`}
                         title={`${formatDateInTimezone(day.date, timezone)} • ${day.count} updates`}
@@ -335,8 +335,8 @@ export const Analytics = () => {
                 </p>
                 <div className="mt-3 space-y-2">
                   {activity.weekly.map((day) => (
-                    <div key={day.date.toISOString()} className="flex items-center gap-3 text-sm">
-                      <span className="w-16 text-muted-foreground">
+                    <div key={day.date.toISOString()} className="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
+                      <span className="w-12 text-muted-foreground sm:w-16">
                         {formatDateInTimezone(day.date, timezone, { weekday: "short" })}
                       </span>
                       <div className="h-2 flex-1 rounded-full bg-muted">
@@ -345,7 +345,7 @@ export const Analytics = () => {
                           style={{ width: `${Math.min(day.count * 20, 100)}%` }}
                         />
                       </div>
-                      <span className="w-8 text-right text-muted-foreground">{day.count}</span>
+                      <span className="w-6 text-right text-muted-foreground sm:w-8">{day.count}</span>
                     </div>
                   ))}
                 </div>

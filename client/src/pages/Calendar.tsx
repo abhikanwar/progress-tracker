@@ -141,63 +141,71 @@ export const CalendarPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <div className="min-w-[720px]">
-                <div className="grid grid-cols-7 gap-2 text-xs text-muted-foreground">
-                  {dayNames.map((day) => (
-                    <div key={day} className="text-center font-semibold uppercase tracking-[0.2em]">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 grid grid-cols-7 gap-2">
-                  {calendarDays.map((date) => {
-                    const key = formatDateKey(date, timezone);
-                    const isCurrentMonth = date.getMonth() === monthCursor.getMonth();
-                    const eventCount = eventsByDay.get(key) ?? 0;
-                    const dueGoals = goalsByDay.get(key) ?? [];
-                    const intensity =
-                      eventCount >= 4 ? "bg-foreground" : eventCount >= 2 ? "bg-foreground/60" : "";
-                    return (
-                      <div
-                        key={key}
-                        className={`min-h-[96px] rounded-2xl border border-border/60 p-2 text-xs ${
-                          isCurrentMonth ? "bg-white/70" : "bg-white/30 text-muted-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold">{date.getDate()}</span>
-                          {eventCount > 0 && (
-                            <span
-                              className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-background ${intensity}`}
-                            >
-                              {eventCount}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-2 space-y-1">
-                          {dueGoals.slice(0, 2).map((goal) => (
-                            <div
-                              key={goal.id}
-                              className={`truncate rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                getDueState(goal, timezone) === "OVERDUE"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
-                              }`}
-                            >
-                              {goal.title}
-                            </div>
-                          ))}
-                          {dueGoals.length > 2 && (
-                            <div className="text-[10px] text-muted-foreground">
-                              +{dueGoals.length - 2} more
-                            </div>
-                          )}
-                        </div>
+            <div>
+              <div className="grid grid-cols-7 gap-1 text-[10px] text-muted-foreground sm:gap-2 sm:text-xs">
+                {dayNames.map((day) => (
+                  <div
+                    key={day}
+                    className="text-center font-semibold uppercase tracking-[0.08em] sm:tracking-[0.2em]"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 grid grid-cols-7 gap-1 sm:mt-3 sm:gap-2">
+                {calendarDays.map((date) => {
+                  const key = formatDateKey(date, timezone);
+                  const isCurrentMonth = date.getMonth() === monthCursor.getMonth();
+                  const eventCount = eventsByDay.get(key) ?? 0;
+                  const dueGoals = goalsByDay.get(key) ?? [];
+                  const intensity =
+                    eventCount >= 4 ? "bg-foreground" : eventCount >= 2 ? "bg-foreground/60" : "";
+                  return (
+                    <div
+                      key={key}
+                      className={`min-h-[72px] rounded-lg border border-border/60 p-1 text-[10px] sm:min-h-[96px] sm:rounded-2xl sm:p-2 sm:text-xs ${
+                        isCurrentMonth ? "bg-card/70" : "bg-muted/30 text-muted-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold">{date.getDate()}</span>
+                        {eventCount > 0 && (
+                          <span
+                            className={`inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-semibold text-background sm:h-5 sm:min-w-[20px] sm:text-[10px] ${intensity}`}
+                          >
+                            {eventCount}
+                          </span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="mt-1 space-y-1 sm:mt-2">
+                        {dueGoals.slice(0, 2).map((goal, idx) => (
+                          <div
+                            key={goal.id}
+                            className={`truncate rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:px-2 sm:text-[10px] ${
+                              idx === 1 ? "hidden sm:block" : ""
+                            } ${
+                              getDueState(goal, timezone) === "OVERDUE"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {goal.title}
+                          </div>
+                        ))}
+                        {dueGoals.length > 1 && (
+                          <div className="text-[9px] text-muted-foreground sm:hidden">
+                            +{dueGoals.length - 1}
+                          </div>
+                        )}
+                        {dueGoals.length > 2 && (
+                          <div className="hidden text-[10px] text-muted-foreground sm:block">
+                            +{dueGoals.length - 2} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             {loading && (
