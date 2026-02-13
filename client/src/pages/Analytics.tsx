@@ -167,11 +167,11 @@ export const Analytics = () => {
   }, [executive.atRisk, executive.onTrack, summary.completed]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 motion-enter">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Analytics</p>
-          <h1 className="text-3xl font-semibold">Executive snapshot</h1>
+          <p className="page-kicker">Analytics</p>
+          <h1 className="page-title">Executive snapshot</h1>
         </div>
         <Button
           variant={presentationMode ? "default" : "outline"}
@@ -182,7 +182,7 @@ export const Analytics = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 stagger-children">
         {[
           { label: "On track", value: executive.onTrack },
           { label: "At risk", value: executive.atRisk },
@@ -200,10 +200,10 @@ export const Analytics = () => {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr] stagger-children">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Week-over-week performance</CardTitle>
+            <CardTitle className="section-title">Week-over-week performance</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-border/70 p-4">
@@ -233,7 +233,7 @@ export const Analytics = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Status distribution</CardTitle>
+            <CardTitle className="section-title">Status distribution</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-6">
             {loading ? (
@@ -270,7 +270,7 @@ export const Analytics = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base">Progress timeline</CardTitle>
+            <CardTitle className="section-title">Progress timeline</CardTitle>
             <Button variant="outline" size="sm">
               Export
             </Button>
@@ -358,7 +358,7 @@ export const Analytics = () => {
       {!presentationMode && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Latest goal updates</CardTitle>
+            <CardTitle className="section-title">Latest goal updates</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">

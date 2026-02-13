@@ -150,3 +150,49 @@ body {
     animation: none;
   }
 }
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.motion-enter {
+  animation: fade-up 420ms ease-out both;
+}
+
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-up 420ms ease-out both;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 30ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 70ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 110ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 190ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 230ms; }
+
+.page-kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+}
+
+.page-title {
+  font-size: clamp(1.65rem, 3vw, 2.2rem);
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}

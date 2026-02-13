@@ -106,17 +106,17 @@ export const CalendarPage = () => {
   }, [eventsByDay, timezone]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 motion-enter">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Calendar</p>
-        <h1 className="text-3xl font-semibold">Schedule your goals</h1>
+        <p className="page-kicker">Calendar</p>
+        <h1 className="page-title">Schedule your goals</h1>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.6fr_0.9fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.6fr_0.9fr] stagger-children">
         <Card>
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-base">{formatMonthLabel(monthCursor, timezone)}</CardTitle>
+              <CardTitle className="section-title">{formatMonthLabel(monthCursor, timezone)}</CardTitle>
               <p className="text-xs text-muted-foreground">Targets and progress activity.</p>
             </div>
             <div className="flex gap-2">
@@ -185,8 +185,8 @@ export const CalendarPage = () => {
                               idx === 1 ? "hidden sm:block" : ""
                             } ${
                               getDueState(goal, timezone) === "OVERDUE"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-amber-100 text-amber-700"
+                                ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200"
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200"
                             }`}
                           >
                             {goal.title}
@@ -220,7 +220,7 @@ export const CalendarPage = () => {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">This week</CardTitle>
+              <CardTitle className="section-title">This week</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm text-muted-foreground">
@@ -245,7 +245,7 @@ export const CalendarPage = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Upcoming targets</CardTitle>
+              <CardTitle className="section-title">Upcoming targets</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm">
@@ -272,8 +272,8 @@ export const CalendarPage = () => {
                           <span
                             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                               getDueState(goal, timezone) === "OVERDUE"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-amber-100 text-amber-700"
+                                ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200"
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200"
                             }`}
                           >
                             {getDueState(goal, timezone) === "OVERDUE" ? "Overdue" : "Due this week"}

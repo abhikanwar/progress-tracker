@@ -36,7 +36,7 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden motion-enter">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-cyan-200/50 blur-3xl dark:bg-cyan-500/20" />
         <div className="absolute -bottom-32 left-0 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/20" />
@@ -75,7 +75,7 @@ export const AuthPage = () => {
 
           <Card className="w-full rounded-3xl border border-border/60 bg-card/95 shadow-card backdrop-blur">
             <CardHeader>
-              <CardTitle className="text-2xl">
+              <CardTitle className="text-2xl leading-tight">
                 {mode === "login" ? "Sign in to continue" : "Create your account"}
               </CardTitle>
               <CardDescription>

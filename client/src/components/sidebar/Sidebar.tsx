@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "../ui/sidebar";
 
 const navItems = [
@@ -27,6 +28,7 @@ const isPathActive = (pathname: string, to: string) => {
 
 export const Sidebar = () => {
   const { pathname } = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   return (
     <UiSidebar collapsible="icon" variant="floating" className="border-r-0">
@@ -54,7 +56,14 @@ export const Sidebar = () => {
               return (
                 <SidebarMenuItem key={item.label}>
                   <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
-                    <NavLink to={item.to}>
+                    <NavLink
+                      to={item.to}
+                      onClick={() => {
+                        if (isMobile) {
+                          setOpenMobile(false);
+                        }
+                      }}
+                    >
                       <Icon />
                       <span>{item.label}</span>
                     </NavLink>

@@ -54,9 +54,9 @@ const getDueState = (
 
 const StatusBadge = ({ status }: { status: GoalStatus }) => {
   const styles: Record<GoalStatus, string> = {
-    ACTIVE: "bg-blue-50 text-blue-700",
-    COMPLETED: "bg-emerald-50 text-emerald-700",
-    ARCHIVED: "bg-slate-200 text-slate-600",
+    ACTIVE: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200",
+    COMPLETED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
+    ARCHIVED: "bg-slate-200 text-slate-600 dark:bg-slate-500/20 dark:text-slate-200",
   };
 
   return (
@@ -78,8 +78,11 @@ const DueBadge = ({
 
   const config =
     state === "OVERDUE"
-      ? { label: "Overdue", style: "bg-red-100 text-red-700" }
-      : { label: "Due this week", style: "bg-amber-100 text-amber-700" };
+      ? { label: "Overdue", style: "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200" }
+      : {
+          label: "Due this week",
+          style: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
+        };
 
   return (
     <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${config.style}`}>
@@ -401,18 +404,18 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-hidden">
+    <div className="flex h-full flex-col gap-6 overflow-hidden motion-enter">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Focus</p>
-          <h1 className="text-3xl font-semibold">Weekly execution</h1>
+          <p className="page-kicker">Focus</p>
+          <h1 className="page-title">Weekly execution</h1>
         </div>
         <Button onClick={openCreate}>New goal</Button>
       </header>
 
-      <Card>
+      <Card className="motion-enter">
         <CardHeader>
-          <CardTitle className="text-base">Weekly planning</CardTitle>
+          <CardTitle className="section-title">Weekly planning</CardTitle>
           <CardDescription>
             Clear weekly snapshot of what to do now.
           </CardDescription>
@@ -554,7 +557,7 @@ export const Dashboard = () => {
 
         <TabsContent value={status} className="flex-1 min-h-0">
           {loading && (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2 stagger-children">
               {Array.from({ length: 4 }, (_, idx) => (
                 <Card key={`goal-skeleton-${idx}`}>
                   <CardHeader>
@@ -576,7 +579,7 @@ export const Dashboard = () => {
           {!loading && !error && (
             <div className="flex h-full min-h-0 flex-1">
               <div className="h-full w-full overflow-y-auto pr-1">
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2 stagger-children">
                   {filteredGoals.length === 0 && (
                     <Card>
                       <CardContent className="p-6 text-sm text-muted-foreground">

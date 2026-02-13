@@ -103,15 +103,15 @@ export const SettingsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 motion-enter">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Settings</p>
-        <h1 className="text-3xl font-semibold">Preferences</h1>
+        <p className="page-kicker">Settings</p>
+        <h1 className="page-title">Preferences</h1>
       </div>
 
-      <Card>
+      <Card className="motion-enter">
         <CardHeader>
-          <CardTitle className="text-base">Account</CardTitle>
+          <CardTitle className="section-title">Account</CardTitle>
           <CardDescription>Profile details associated with your account.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
@@ -136,9 +136,9 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="motion-enter">
         <CardHeader>
-          <CardTitle className="text-base">Timezone</CardTitle>
+          <CardTitle className="section-title">Timezone</CardTitle>
           <CardDescription>
             This preference will be used for due dates, weekly rollups, and reminders.
           </CardDescription>
@@ -163,9 +163,9 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="motion-enter">
         <CardHeader>
-          <CardTitle className="text-base">Security</CardTitle>
+          <CardTitle className="section-title">Security</CardTitle>
           <CardDescription>Change your account password.</CardDescription>
         </CardHeader>
         <CardContent>
