@@ -3,6 +3,7 @@ import cors from "cors";
 import { env } from "./config/env.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { goalsRouter } from "./modules/goals/goals.routes.js";
+import { goalTemplatesRouter } from "./modules/goalTemplates/goalTemplates.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { notFound } from "./middlewares/notFound.js";
 
@@ -15,6 +16,7 @@ export const createApp = () => {
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/auth", authRouter);
   app.use("/goals", goalsRouter);
+  app.use("/goal-templates", goalTemplatesRouter);
 
   app.use(notFound);
   app.use(errorHandler);

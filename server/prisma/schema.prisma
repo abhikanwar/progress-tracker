@@ -96,3 +96,41 @@ model User {
   goals        Goal[]
   tags         Tag[]
 }
+
+model GoalTemplate {
+  id                String                  @id @default(uuid())
+  slug              String                  @unique
+  name              String
+  description       String?
+  category          String
+  defaultTargetDays Int?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  milestones        GoalTemplateMilestone[]
+  tags              GoalTemplateTag[]
+
+  @@index([category])
+}
+
+model GoalTemplateMilestone {
+  id         String       @id @default(uuid())
+  templateId String
+  title      String
+  sortOrder  Int
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  template   GoalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+model GoalTemplateTag {
+  id         String       @id @default(uuid())
+  templateId String
+  name       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  template   GoalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
