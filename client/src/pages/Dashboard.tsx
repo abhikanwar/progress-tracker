@@ -68,8 +68,8 @@ const ProgressHistory = ({ events }: { events: ProgressEvent[] }) => {
   }
 
   return (
-    <div className="space-y-2">
-      {events.slice(0, 4).map((event) => (
+    <div className="max-h-28 space-y-2 overflow-y-auto pr-1">
+      {events.map((event) => (
         <div key={event.id} className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
             {formatDateTime(event.createdAt)}
@@ -202,7 +202,7 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full flex-col gap-6 overflow-hidden">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Dashboard</p>
@@ -211,7 +211,11 @@ export const Dashboard = () => {
         <Button onClick={openCreate}>New goal</Button>
       </header>
 
-      <Tabs value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+      <Tabs
+        value={status}
+        onValueChange={(value) => setStatus(value as typeof status)}
+        className="flex h-full flex-1 flex-col"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList>
             {statusFilters.map((tab) => (
@@ -227,78 +231,82 @@ export const Dashboard = () => {
           />
         </div>
 
-        <TabsContent value={status}>
+        <TabsContent value={status} className="flex-1 min-h-0">
           {loading && <p className="text-sm text-muted-foreground">Loading goals...</p>}
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {!loading && !error && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {filteredGoals.length === 0 && (
-                <Card>
-                  <CardContent className="p-6 text-sm text-muted-foreground">
-                    No goals yet. Create your first goal.
-                  </CardContent>
-                </Card>
-              )}
+            <div className="flex h-full min-h-0 flex-1">
+              <div className="h-full w-full overflow-y-auto pr-1">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {filteredGoals.length === 0 && (
+                    <Card>
+                      <CardContent className="p-6 text-sm text-muted-foreground">
+                        No goals yet. Create your first goal.
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {filteredGoals.map((goal) => (
-                <Card key={goal.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <CardTitle>{goal.title}</CardTitle>
-                        <CardDescription>{goal.details || "No details yet."}</CardDescription>
-                      </div>
-                      <StatusBadge status={goal.status} />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Progress</span>
-                        <span>{goal.currentProgress}%</span>
-                      </div>
-                      <div className="mt-2 h-2 w-full rounded-full bg-muted">
-                        <div
-                          className="h-2 rounded-full bg-foreground"
-                          style={{ width: `${goal.currentProgress}%` }}
-                        />
-                      </div>
-                    </div>
+                  {filteredGoals.map((goal) => (
+                    <Card key={goal.id}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <CardTitle>{goal.title}</CardTitle>
+                            <CardDescription>{goal.details || "No details yet."}</CardDescription>
+                          </div>
+                          <StatusBadge status={goal.status} />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Progress</span>
+                            <span>{goal.currentProgress}%</span>
+                          </div>
+                          <div className="mt-2 h-2 w-full rounded-full bg-muted">
+                            <div
+                              className="h-2 rounded-full bg-foreground"
+                              style={{ width: `${goal.currentProgress}%` }}
+                            />
+                          </div>
+                        </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Target date</span>
-                      <span>{formatDate(goal.targetDate)}</span>
-                    </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Target date</span>
+                          <span>{formatDate(goal.targetDate)}</span>
+                        </div>
 
-                    <div>
-                      <p className="text-xs text-muted-foreground">Progress history</p>
-                      <ProgressHistory events={goal.progressEvents ?? []} />
-                    </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Progress history</p>
+                          <ProgressHistory events={goal.progressEvents ?? []} />
+                        </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {[0, 25, 50, 75, 100].map((value) => (
-                        <Button
-                          key={value}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleProgress(goal, value)}
-                        >
-                          {value}%
+                        <div className="flex flex-wrap items-center gap-2">
+                          {[0, 25, 50, 75, 100].map((value) => (
+                            <Button
+                              key={value}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleProgress(goal, value)}
+                            >
+                              {value}%
+                            </Button>
+                          ))}
+                        </div>
+                      </CardContent>
+                      <div className="flex items-center justify-between px-4 pb-4">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(goal)}>
+                          Edit
                         </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <div className="flex items-center justify-between px-4 pb-4">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(goal)}>
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(goal)}>
-                      Delete
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+                        <Button variant="outline" size="sm" onClick={() => handleDelete(goal)}>
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </TabsContent>
