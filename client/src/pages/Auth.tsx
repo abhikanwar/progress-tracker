@@ -1,37 +1,37 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { authApi } from "../lib/api";
-import { authStorage } from "../lib/auth";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Skeleton } from "../components/ui/skeleton";
+import { useLoginMutation, useRegisterMutation } from "../hooks/queries/useAuthQueries";
 
 export const AuthPage = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const loginMutation = useLoginMutation();
+  const registerMutation = useRegisterMutation();
+  const loading = loginMutation.isPending || registerMutation.isPending;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setLoading(true);
 
     try {
       const payload = { email: email.trim(), password };
-      const result =
-        mode === "login" ? await authApi.login(payload) : await authApi.register(payload);
-      authStorage.setToken(result.token);
+      if (mode === "login") {
+        await loginMutation.mutateAsync(payload);
+      } else {
+        await registerMutation.mutateAsync(payload);
+      }
       toast.success(mode === "login" ? "Welcome back!" : "Account created.");
       navigate("/");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Authentication failed";
       toast.error(message);
-    } finally {
-      setLoading(false);
     }
   };
 

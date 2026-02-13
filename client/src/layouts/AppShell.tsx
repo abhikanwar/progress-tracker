@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from "../components/ui/sidebar";
 import { Button } from "../components/ui/button";
@@ -9,15 +10,18 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { goalsApi } from "../lib/api";
-import type { Goal } from "../types/goals";
 import { toast } from "sonner";
+import { useGoalsListQuery } from "../hooks/queries/useGoalsQueries";
+import { queryKeys } from "../lib/queryKeys";
 
 const MobileQuickActions = () => {
   const { isMobile } = useSidebar();
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [action, setAction] = useState<"goal" | "progress" | "milestone">("goal");
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loadingGoals, setLoadingGoals] = useState(false);
+  const goalsQuery = useGoalsListQuery();
+  const goals = (goalsQuery.data ?? []).filter((goal) => goal.status === "ACTIVE");
+  const loadingGoals = goalsQuery.isLoading;
   const [selectedGoalId, setSelectedGoalId] = useState("");
   const [goalTitle, setGoalTitle] = useState("");
   const [progressValue, setProgressValue] = useState(10);
@@ -28,22 +32,8 @@ const MobileQuickActions = () => {
 
   useEffect(() => {
     if (!dialogOpen || !isMobile) return;
-    const loadGoals = async () => {
-      try {
-        setLoadingGoals(true);
-        const data = await goalsApi.list();
-        const active = data.filter((goal) => goal.status === "ACTIVE");
-        setGoals(active);
-        setSelectedGoalId(active[0]?.id ?? "");
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load goals";
-        toast.error(message);
-      } finally {
-        setLoadingGoals(false);
-      }
-    };
-    void loadGoals();
-  }, [dialogOpen, isMobile]);
+    setSelectedGoalId((prev) => prev || goals[0]?.id || "");
+  }, [dialogOpen, goals, isMobile]);
 
   if (!isMobile) return null;
 
@@ -70,6 +60,7 @@ const MobileQuickActions = () => {
         }
         setDialogOpen(false);
         await goalsApi.create({ title });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.goals.list() });
         setGoalTitle("");
         toast.success("Priority added.");
         triggerPulse("goal");
@@ -85,6 +76,7 @@ const MobileQuickActions = () => {
           value: Math.max(0, Math.min(100, progressValue)),
           note: progressNote.trim() || undefined,
         });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.goals.list() });
         setProgressNote("");
         toast.success("Progress logged.");
         triggerPulse("progress");
@@ -102,6 +94,7 @@ const MobileQuickActions = () => {
         }
         setDialogOpen(false);
         await goalsApi.addMilestone(selectedGoalId, { title });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.goals.list() });
         setMilestoneTitle("");
         toast.success("Milestone added.");
         triggerPulse("milestone");

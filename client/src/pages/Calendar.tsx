@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { goalsApi } from "../lib/api";
 import type { Goal } from "../types/goals";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { toast } from "sonner";
 import {
   formatDateInTimezone,
   getDateKeyInTimezone,
@@ -11,6 +9,7 @@ import {
 } from "../lib/datetime";
 import { settingsStorage } from "../lib/settings";
 import { Skeleton } from "../components/ui/skeleton";
+import { useGoalsListQuery } from "../hooks/queries/useGoalsQueries";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -37,27 +36,12 @@ const getDueState = (
 
 export const CalendarPage = () => {
   const timezone = settingsStorage.getResolvedTimezone();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const goalsQuery = useGoalsListQuery();
+  const goals = goalsQuery.data ?? [];
+  const loading = goalsQuery.isLoading;
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const hasAnimatedRef = useRef(false);
   const [playIntro, setPlayIntro] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const data = await goalsApi.list();
-        setGoals(data);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load goals";
-        toast.error(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    void load();
-  }, []);
 
   const calendarDays = useMemo(() => {
     const start = startOfMonth(monthCursor);

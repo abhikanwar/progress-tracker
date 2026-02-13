@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { authStorage } from "../lib/auth";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { authApi } from "../lib/api";
 import { settingsStorage } from "../lib/settings";
 import { toast } from "sonner";
 import { formatDateInTimezone } from "../lib/datetime";
 import { Skeleton } from "../components/ui/skeleton";
+import { useChangePasswordMutation, useMeQuery } from "../hooks/queries/useAuthQueries";
 
 const fallbackTimezones = [
   "UTC",
@@ -24,9 +25,8 @@ const fallbackTimezones = [
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [createdAt, setCreatedAt] = useState<string | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const queryClient = useQueryClient();
+  const meQuery = useMeQuery();
   const [timezone, setTimezone] = useState(
     settingsStorage.getResolvedTimezone()
   );
@@ -35,32 +35,17 @@ export const SettingsPage = () => {
     newPassword: "",
     confirmNewPassword: "",
   });
-  const [savingPassword, setSavingPassword] = useState(false);
+  const changePasswordMutation = useChangePasswordMutation();
+  const savingPassword = changePasswordMutation.isPending;
 
   const timezoneOptions = useMemo(() => {
     const supported = Intl.supportedValuesOf?.("timeZone");
     return supported && supported.length > 0 ? supported : fallbackTimezones;
   }, []);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        setLoadingProfile(true);
-        const profile = await authApi.me();
-        setEmail(profile.email);
-        setCreatedAt(profile.createdAt);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load profile";
-        toast.error(message);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-    void loadProfile();
-  }, []);
-
   const handleLogout = () => {
     authStorage.clearToken();
+    queryClient.clear();
     navigate("/login");
   };
 
@@ -83,8 +68,7 @@ export const SettingsPage = () => {
     }
 
     try {
-      setSavingPassword(true);
-      await authApi.changePassword({
+      await changePasswordMutation.mutateAsync({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
@@ -97,8 +81,6 @@ export const SettingsPage = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update password";
       toast.error(message);
-    } finally {
-      setSavingPassword(false);
     }
   };
 
@@ -124,19 +106,19 @@ export const SettingsPage = () => {
         <CardContent className="space-y-3 text-sm">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Email</p>
-            {loadingProfile ? (
+            {meQuery.isLoading ? (
               <Skeleton className="mt-1 h-5 w-48" />
             ) : (
-              <p className="font-medium">{email || "—"}</p>
+              <p className="font-medium">{meQuery.data?.email || "—"}</p>
             )}
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Member since</p>
-            {loadingProfile ? (
+            {meQuery.isLoading ? (
               <Skeleton className="mt-1 h-5 w-28" />
             ) : (
               <p className="font-medium">
-                {!createdAt ? "—" : formatDateInTimezone(createdAt, timezone)}
+                {!meQuery.data?.createdAt ? "—" : formatDateInTimezone(meQuery.data.createdAt, timezone)}
               </p>
             )}
           </div>

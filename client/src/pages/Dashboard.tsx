@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +21,27 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Skeleton } from "../components/ui/skeleton";
 import { toast } from "sonner";
-import type { Goal, GoalInput, GoalStatus, ProgressEvent, Tag } from "../types/goals";
-import { goalsApi } from "../lib/api";
+import type { Goal, GoalInput, GoalStatus, ProgressEvent } from "../types/goals";
 import {
   formatDateInTimezone,
   formatDateTimeInTimezone,
   getDayDifferenceFromTodayInTimezone,
 } from "../lib/datetime";
 import { settingsStorage } from "../lib/settings";
+import { queryKeys } from "../lib/queryKeys";
+import {
+  useAddMilestoneMutation,
+  useAddProgressMutation,
+  useAddTagMutation,
+  useCreateGoalMutation,
+  useDeleteGoalMutation,
+  useDeleteMilestoneMutation,
+  useDeleteTagMutation,
+  useGoalsListQuery,
+  useGoalTagsQuery,
+  useUpdateGoalMutation,
+  useUpdateMilestoneMutation,
+} from "../hooks/queries/useGoalsQueries";
 
 const statusFilters = ["ALL", "ACTIVE", "COMPLETED", "ARCHIVED"] as const;
 const dueFilters = ["ALL", "OVERDUE", "DUE_SOON", "NO_TARGET_DATE"] as const;
@@ -115,14 +129,34 @@ const ProgressHistory = ({ events, timezone }: { events: ProgressEvent[]; timezo
 
 export const Dashboard = () => {
   const timezone = settingsStorage.getResolvedTimezone();
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const queryClient = useQueryClient();
+  const goalsQuery = useGoalsListQuery();
+  const tagsQuery = useGoalTagsQuery();
+  const createGoalMutation = useCreateGoalMutation();
+  const updateGoalMutation = useUpdateGoalMutation();
+  const deleteGoalMutation = useDeleteGoalMutation();
+  const addProgressMutation = useAddProgressMutation();
+  const addMilestoneMutation = useAddMilestoneMutation();
+  const updateMilestoneMutation = useUpdateMilestoneMutation();
+  const deleteMilestoneMutation = useDeleteMilestoneMutation();
+  const addTagMutation = useAddTagMutation();
+  const deleteTagMutation = useDeleteTagMutation();
+
+  const goals = goalsQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const loading = goalsQuery.isLoading || tagsQuery.isLoading;
+  const refreshing = goalsQuery.isFetching || tagsQuery.isFetching;
+  const error =
+    goalsQuery.error instanceof Error
+      ? goalsQuery.error.message
+      : tagsQuery.error instanceof Error
+        ? tagsQuery.error.message
+        : null;
+
   const [status, setStatus] = useState<(typeof statusFilters)[number]>("ALL");
   const [dueFilter, setDueFilter] = useState<(typeof dueFilters)[number]>("ALL");
   const [search, setSearch] = useState("");
   const [selectedTagId, setSelectedTagId] = useState("ALL");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tags, setTags] = useState<Tag[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("UPDATED_DESC");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -140,49 +174,12 @@ export const Dashboard = () => {
   });
   const [formErrors, setFormErrors] = useState<{ title?: string }>({});
 
-  const createTempGoal = (payload: GoalInput): Goal => {
-    const now = new Date().toISOString();
-    return {
-      id: `temp-${Date.now()}`,
-      title: payload.title,
-      details: payload.details ?? null,
-      status: "ACTIVE",
-      targetDate: payload.targetDate ?? null,
-      currentProgress: 0,
-      createdAt: now,
-      updatedAt: now,
-      progressEvents: [],
-      milestones: [],
-      goalTags: [],
-    };
-  };
-
-  const loadGoals = async () => {
-    try {
-      setLoading(true);
-      const [goalsData, tagsData] = await Promise.all([goalsApi.list(), goalsApi.listTags()]);
-      setGoals(goalsData);
-      setTags(tagsData);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load goals";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const triggerPulse = (key: string) => {
     setPulseKey(key);
     setTimeout(() => {
       setPulseKey((prev) => (prev === key ? null : prev));
     }, 220);
   };
-
-  useEffect(() => {
-    void loadGoals();
-  }, []);
 
   const filteredGoals = useMemo(() => {
     const filtered = goals.filter((goal) => {
@@ -311,51 +308,33 @@ export const Dashboard = () => {
         : undefined,
     };
 
-    const previousGoals = goals;
     setDialogOpen(false);
 
     try {
       if (editingGoal) {
-        setGoals((prev) =>
-          prev.map((goal) =>
-            goal.id === editingGoal.id
-              ? {
-                  ...goal,
-                  title: payload.title,
-                  details: payload.details ?? null,
-                  targetDate: payload.targetDate ?? null,
-                  updatedAt: new Date().toISOString(),
-                }
-              : goal
-          )
-        );
-        await goalsApi.update(editingGoal.id, payload);
+        await updateGoalMutation.mutateAsync({
+          id: editingGoal.id,
+          payload,
+        });
         toast.success("Goal updated.");
         triggerPulse(`goal-${editingGoal.id}`);
       } else {
-        const tempGoal = createTempGoal(payload);
-        setGoals((prev) => [tempGoal, ...prev]);
-        await goalsApi.create(payload);
+        await createGoalMutation.mutateAsync(payload);
         toast.success("Goal created.");
         triggerPulse("new-goal");
       }
-      void loadGoals();
     } catch (err) {
-      setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to save goal";
       toast.error(message);
     }
   };
 
   const handleDelete = async (goal: Goal) => {
-    const previousGoals = goals;
-    setGoals((prev) => prev.filter((item) => item.id !== goal.id));
     try {
-      await goalsApi.remove(goal.id);
+      await deleteGoalMutation.mutateAsync(goal.id);
       toast.success("Goal deleted.");
       triggerPulse("new-goal");
     } catch (err) {
-      setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to delete goal";
       toast.error(message);
     }
@@ -370,42 +349,20 @@ export const Dashboard = () => {
 
   const handleProgressSubmit = async () => {
     if (!progressGoal) return;
-
-    const previousGoals = goals;
-    const now = new Date().toISOString();
-    const tempEvent: ProgressEvent = {
-      id: `temp-progress-${Date.now()}`,
-      goalId: progressGoal.id,
-      value: progressValue,
-      note: progressNote.trim() || null,
-      createdAt: now,
-    };
-
-    setGoals((prev) =>
-      prev.map((goal) =>
-        goal.id === progressGoal.id
-          ? {
-              ...goal,
-              currentProgress: progressValue,
-              updatedAt: now,
-              progressEvents: [tempEvent, ...(goal.progressEvents ?? [])],
-            }
-          : goal
-      )
-    );
     setProgressDialogOpen(false);
     setProgressGoal(null);
 
     try {
-      await goalsApi.addProgress(progressGoal.id, {
-        value: progressValue,
-        note: progressNote.trim() || undefined,
+      await addProgressMutation.mutateAsync({
+        goalId: progressGoal.id,
+        payload: {
+          value: progressValue,
+          note: progressNote.trim() || undefined,
+        },
       });
       toast.success("Progress updated.");
       triggerPulse(`goal-${progressGoal.id}`);
-      void loadGoals();
     } catch (err) {
-      setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to update progress";
       toast.error(message);
     }
@@ -415,33 +372,16 @@ export const Dashboard = () => {
     const title = (milestoneDrafts[goal.id] ?? "").trim();
     if (!title) return;
 
-    const previousGoals = goals;
-    const now = new Date().toISOString();
-    const tempMilestone = {
-      id: `temp-ms-${Date.now()}`,
-      goalId: goal.id,
-      title,
-      completed: false,
-      createdAt: now,
-      updatedAt: now,
-    };
-
     setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: "" }));
-    setGoals((prev) =>
-      prev.map((item) =>
-        item.id === goal.id
-          ? { ...item, milestones: [tempMilestone, ...(item.milestones ?? [])] }
-          : item
-      )
-    );
 
     try {
-      await goalsApi.addMilestone(goal.id, { title });
+      await addMilestoneMutation.mutateAsync({
+        goalId: goal.id,
+        payload: { title },
+      });
       toast.success("Milestone added.");
       triggerPulse(`goal-${goal.id}`);
-      void loadGoals();
     } catch (err) {
-      setGoals(previousGoals);
       setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: title }));
       const message = err instanceof Error ? err.message : "Failed to add milestone";
       toast.error(message);
@@ -454,9 +394,12 @@ export const Dashboard = () => {
     completed: boolean
   ) => {
     try {
-      await goalsApi.updateMilestone(goalId, milestoneId, { completed });
+      await updateMilestoneMutation.mutateAsync({
+        goalId,
+        milestoneId,
+        payload: { completed },
+      });
       triggerPulse(`goal-${goalId}`);
-      await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update milestone";
       toast.error(message);
@@ -465,10 +408,9 @@ export const Dashboard = () => {
 
   const handleMilestoneDelete = async (goalId: string, milestoneId: string) => {
     try {
-      await goalsApi.removeMilestone(goalId, milestoneId);
+      await deleteMilestoneMutation.mutateAsync({ goalId, milestoneId });
       toast.success("Milestone removed.");
       triggerPulse(`goal-${goalId}`);
-      await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to remove milestone";
       toast.error(message);
@@ -479,11 +421,10 @@ export const Dashboard = () => {
     const tagName = (tagDrafts[goal.id] ?? "").trim();
     if (!tagName) return;
     try {
-      await goalsApi.addTag(goal.id, tagName);
+      await addTagMutation.mutateAsync({ goalId: goal.id, name: tagName });
       setTagDrafts((prev) => ({ ...prev, [goal.id]: "" }));
       toast.success("Tag added.");
       triggerPulse(`goal-${goal.id}`);
-      await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to add tag";
       toast.error(message);
@@ -492,10 +433,9 @@ export const Dashboard = () => {
 
   const handleTagDelete = async (goalId: string, tagId: string) => {
     try {
-      await goalsApi.removeTag(goalId, tagId);
+      await deleteTagMutation.mutateAsync({ goalId, tagId });
       toast.success("Tag removed.");
       triggerPulse(`goal-${goalId}`);
-      await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to remove tag";
       toast.error(message);
@@ -510,6 +450,16 @@ export const Dashboard = () => {
           <h1 className="page-title">Weekly execution</h1>
         </div>
         <div className="page-actions">
+          <Button
+            variant="outline"
+            onClick={() => {
+              void queryClient.invalidateQueries({ queryKey: queryKeys.goals.list() });
+              void queryClient.invalidateQueries({ queryKey: queryKeys.goals.tags() });
+            }}
+            disabled={refreshing}
+          >
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
           <Button className={pulseKey === "new-goal" ? "pulse-pop" : ""} onClick={openCreate}>
             New goal
           </Button>

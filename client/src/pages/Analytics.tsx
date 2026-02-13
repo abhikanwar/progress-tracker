@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { goalsApi } from "../lib/api";
 import type { Goal } from "../types/goals";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
@@ -12,27 +11,16 @@ import { settingsStorage } from "../lib/settings";
 import { Skeleton } from "../components/ui/skeleton";
 import { CalloutPanel, MetricCard, TrendBadge } from "../components/ui/demo-blocks";
 import { useCountUp } from "../hooks/useCountUp";
+import { useGoalsListQuery } from "../hooks/queries/useGoalsQueries";
 
 export const Analytics = () => {
   const timezone = settingsStorage.getResolvedTimezone();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const goalsQuery = useGoalsListQuery();
+  const goals = goalsQuery.data ?? [];
+  const loading = goalsQuery.isLoading;
   const [presentationMode, setPresentationMode] = useState(false);
   const hasAnimatedRef = useRef(false);
   const [playIntro, setPlayIntro] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await goalsApi.list();
-        setGoals(data);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void load();
-  }, []);
 
   const summary = useMemo(() => {
     const total = goals.length;
