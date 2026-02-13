@@ -11,6 +11,13 @@ import type {
   ProgressInput,
 } from "../types/goals";
 import type { ApplyTemplateInput, ApplyTemplateResponse, GoalTemplate } from "../types/templates";
+import type {
+  CoachChatMessage,
+  CoachChatReply,
+  CoachCompletionRate,
+  CoachConversation,
+  CoachInsight,
+} from "../types/coach";
 import { authStorage } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -130,6 +137,29 @@ export const goalTemplatesApi = {
   },
   apply: (templateId: string, payload: ApplyTemplateInput) =>
     apiFetch<ApplyTemplateResponse>(`/goal-templates/${templateId}/apply`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const coachApi = {
+  getInsight: () => apiFetch<CoachInsight | undefined>("/coach/insight"),
+  generateInsight: () =>
+    apiFetch<CoachInsight>("/coach/insight/generate", {
+      method: "POST",
+    }),
+  completeAction: (goalId: string, insightId: string) =>
+    apiFetch<void>(`/coach/actions/${goalId}/complete`, {
+      method: "POST",
+      body: JSON.stringify({ insightId }),
+    }),
+  getCompletionRate: (windowDays = 7) =>
+    apiFetch<CoachCompletionRate>(`/coach/actions/completion-rate?windowDays=${windowDays}`),
+  listConversations: () => apiFetch<CoachConversation[]>("/coach/chat/conversations"),
+  listMessages: (conversationId: string) =>
+    apiFetch<CoachChatMessage[]>(`/coach/chat/conversations/${conversationId}/messages`),
+  sendMessage: (payload: { conversationId?: string; message: string }) =>
+    apiFetch<CoachChatReply>("/coach/chat/message", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

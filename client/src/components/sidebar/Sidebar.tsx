@@ -1,4 +1,4 @@
-import { BarChart3, Calendar, LayoutGrid, Settings, SlidersHorizontal } from "lucide-react";
+import { BarChart3, BrainCircuit, Calendar, LayoutGrid, MessageSquare, Settings, SlidersHorizontal } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ThemeToggle } from "../ThemeToggle";
 import {
@@ -19,6 +19,8 @@ const navItems = [
   { label: "Analytics", to: "/analytics", icon: BarChart3 },
   { label: "Calendar", to: "/calendar", icon: Calendar },
   { label: "Customization", to: "/customization", icon: SlidersHorizontal },
+  { label: "Coach Summary", to: "/coach", icon: BrainCircuit },
+  { label: "Coach Chat", to: "/coach-chat", icon: MessageSquare },
   { label: "Settings", to: "/settings", icon: Settings },
 ] as const;
 

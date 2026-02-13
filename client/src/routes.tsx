@@ -7,6 +7,8 @@ import { SettingsPage } from "./pages/Settings";
 import { AuthPage } from "./pages/Auth";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { CustomizationPage } from "./pages/Customization";
+import { CoachPage } from "./pages/Coach";
+import { CoachChatPage } from "./pages/CoachChat";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <AuthPage /> },
@@ -22,6 +24,8 @@ export const router = createBrowserRouter([
       { path: "analytics", element: <Analytics /> },
       { path: "calendar", element: <CalendarPage /> },
       { path: "customization", element: <CustomizationPage /> },
+      { path: "coach", element: <CoachPage /> },
+      { path: "coach-chat", element: <CoachChatPage /> },
       { path: "settings", element: <SettingsPage /> },
     ],
   },
