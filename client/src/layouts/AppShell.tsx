@@ -228,7 +228,7 @@ export const AppShell = () => {
   return (
     <SidebarProvider defaultOpen>
       <Sidebar />
-      <SidebarInset className="m-4 min-h-0 overflow-hidden rounded-3xl border border-border/60 bg-card shadow-card">
+      <SidebarInset className="m-4 min-h-0 overflow-hidden rounded-3xl border border-border/70 bg-background shadow-card">
         <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
           <SidebarTrigger />
         </div>

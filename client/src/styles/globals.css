@@ -12,7 +12,7 @@
   --card-foreground: 222 47% 11%;
   --muted: 210 20% 94%;
   --muted-foreground: 215 16% 46%;
-  --border: 214 20% 89%;
+  --border: 214 18% 84%;
   --radius-sm: 0.625rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.125rem;
@@ -33,11 +33,11 @@
   color-scheme: dark;
   --background: 222 32% 10%;
   --foreground: 210 20% 96%;
-  --card: 222 28% 14%;
+  --card: 222 30% 16%;
   --card-foreground: 210 20% 96%;
   --muted: 222 16% 20%;
   --muted-foreground: 215 12% 65%;
-  --border: 222 14% 22%;
+  --border: 222 16% 28%;
 }
 
 * {
