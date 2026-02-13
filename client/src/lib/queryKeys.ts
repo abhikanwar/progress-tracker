@@ -9,4 +9,8 @@ export const queryKeys = {
   settings: {
     profile: () => ["settings", "profile"] as const,
   },
+  templates: {
+    list: (filters?: { category?: string; search?: string }) =>
+      ["goal-templates", filters?.category ?? "", filters?.search ?? ""] as const,
+  },
 };

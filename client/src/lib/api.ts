@@ -10,6 +10,7 @@ import type {
   ProgressEvent,
   ProgressInput,
 } from "../types/goals";
+import type { ApplyTemplateInput, ApplyTemplateResponse, GoalTemplate } from "../types/templates";
 import { authStorage } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -113,6 +114,22 @@ export const authApi = {
     apiFetch<{ id: string; email: string; createdAt: string }>("/auth/me"),
   changePassword: (payload: { currentPassword: string; newPassword: string }) =>
     apiFetch<void>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const goalTemplatesApi = {
+  list: (params?: { category?: string; search?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.set("category", params.category);
+    if (params?.search) queryParams.set("search", params.search);
+
+    const query = queryParams.toString();
+    return apiFetch<GoalTemplate[]>(`/goal-templates${query ? `?${query}` : ""}`);
+  },
+  apply: (templateId: string, payload: ApplyTemplateInput) =>
+    apiFetch<ApplyTemplateResponse>(`/goal-templates/${templateId}/apply`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
