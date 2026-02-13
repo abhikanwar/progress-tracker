@@ -1,6 +1,7 @@
 import type { Goal, GoalMilestone, GoalTag, ProgressEvent, Prisma, Tag } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import type {
+  CoachActionProposalDto,
   CoachActionCompletionRate,
   CoachConversationDto,
   CoachMessageDto,
@@ -14,6 +15,8 @@ type CoachGoal = Goal & {
   milestones: GoalMilestone[];
   goalTags: Array<GoalTag & { tag: Tag }>;
 };
+
+type CoachGoalFull = CoachGoal;
 
 const mapInsight = (insight: {
   id: string;
@@ -47,13 +50,84 @@ const mapMessage = (message: {
   role: string;
   content: string;
   createdAt: Date;
+  actionProposals?: Array<{
+    id: string;
+    type: string;
+    label: string;
+    payload: Prisma.JsonValue;
+    riskLevel: string;
+    expiresAt: Date;
+    status: string;
+  }>;
 }): CoachMessageDto => ({
   id: message.id,
   conversationId: message.conversationId,
   role: message.role as "user" | "assistant",
   content: message.content,
   createdAt: message.createdAt.toISOString(),
+  proposedActions: message.actionProposals?.map(mapActionProposal) ?? [],
 });
+
+const mapActionProposal = (proposal: {
+  id: string;
+  type: string;
+  label: string;
+  payload: Prisma.JsonValue;
+  riskLevel: string;
+  expiresAt: Date;
+  status: string;
+}): CoachActionProposalDto => {
+  if (proposal.type === "update_goal") {
+    const payload = proposal.payload as {
+      goalId: string;
+      goalTitle: string;
+      title?: string;
+      details?: string;
+      targetDate?: string;
+    };
+    return {
+      id: proposal.id,
+      type: "update_goal",
+      label: proposal.label,
+      payload,
+      riskLevel: (proposal.riskLevel as "low" | "high") ?? "low",
+      expiresAt: proposal.expiresAt.toISOString(),
+      status: (proposal.status as "pending" | "executed" | "expired" | "cancelled") ?? "pending",
+    };
+  }
+
+  if (proposal.type === "delete_goal") {
+    const payload = proposal.payload as {
+      goalId: string;
+      goalTitle: string;
+    };
+    return {
+      id: proposal.id,
+      type: "delete_goal",
+      label: proposal.label,
+      payload,
+      riskLevel: (proposal.riskLevel as "low" | "high") ?? "high",
+      expiresAt: proposal.expiresAt.toISOString(),
+      status: (proposal.status as "pending" | "executed" | "expired" | "cancelled") ?? "pending",
+    };
+  }
+
+  const payload = proposal.payload as {
+    title: string;
+    details?: string;
+    targetDate?: string;
+  };
+
+  return {
+    id: proposal.id,
+    type: "create_goal",
+    label: proposal.label,
+    payload,
+    riskLevel: (proposal.riskLevel as "low" | "high") ?? "low",
+    expiresAt: proposal.expiresAt.toISOString(),
+    status: (proposal.status as "pending" | "executed" | "expired" | "cancelled") ?? "pending",
+  };
+};
 
 export const coachRepo = {
   getGoalsForCoach: (userId: string) =>
@@ -199,6 +273,18 @@ export const coachRepo = {
             role: true,
             content: true,
             createdAt: true,
+            actionProposals: {
+              orderBy: { createdAt: "asc" },
+              select: {
+                id: true,
+                type: true,
+                label: true,
+                payload: true,
+                riskLevel: true,
+                expiresAt: true,
+                status: true,
+              },
+            },
           },
         },
       },
@@ -255,6 +341,295 @@ export const coachRepo = {
 
     return mapMessage(message);
   },
+
+  createActionProposals: async (
+    userId: string,
+    input: {
+      conversationId: string;
+      messageId: string;
+      proposals: Array<{
+        type: "create_goal" | "delete_goal" | "update_goal";
+        label: string;
+        payload: Prisma.InputJsonValue;
+        riskLevel: "low" | "high";
+        expiresAt: Date;
+      }>;
+    }
+  ): Promise<CoachActionProposalDto[]> => {
+    if (input.proposals.length === 0) return [];
+
+    const proposals = await prisma.$transaction(async (tx) => {
+      const conversation = await tx.coachConversation.findFirst({
+        where: { id: input.conversationId, userId },
+        select: { id: true },
+      });
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+
+      const message = await tx.coachMessage.findFirst({
+        where: { id: input.messageId, conversationId: input.conversationId },
+        select: { id: true },
+      });
+      if (!message) {
+        throw new Error("Assistant message not found");
+      }
+
+      const created = await Promise.all(
+        input.proposals.map((proposal) =>
+          tx.coachActionProposal.create({
+            data: {
+              userId,
+              conversationId: input.conversationId,
+              messageId: input.messageId,
+              type: proposal.type,
+              label: proposal.label,
+              payload: proposal.payload,
+              riskLevel: proposal.riskLevel,
+              expiresAt: proposal.expiresAt,
+            },
+            select: {
+              id: true,
+              type: true,
+              label: true,
+              payload: true,
+              riskLevel: true,
+              expiresAt: true,
+              status: true,
+            },
+          })
+        )
+      );
+      return created;
+    });
+
+    return proposals.map(mapActionProposal);
+  },
+
+  getActionProposalById: async (userId: string, proposalId: string) =>
+    prisma.coachActionProposal.findFirst({
+      where: { id: proposalId, userId },
+      select: {
+        id: true,
+        type: true,
+        label: true,
+        payload: true,
+        riskLevel: true,
+        expiresAt: true,
+        status: true,
+        conversationId: true,
+      },
+    }),
+
+  executeActionProposal: async (input: {
+    userId: string;
+    proposalId: string;
+    now: Date;
+    confirmText?: string;
+  }): Promise<{
+    resultType: "goal_created" | "goal_deleted" | "goal_updated";
+    goal?: CoachGoalFull;
+    goalId?: string;
+    undoExpiresAt?: string;
+  }> =>
+    prisma.$transaction(async (tx) => {
+      const proposal = await tx.coachActionProposal.findFirst({
+        where: { id: input.proposalId, userId: input.userId },
+        select: {
+          id: true,
+          type: true,
+          payload: true,
+          status: true,
+          expiresAt: true,
+        },
+      });
+
+      if (!proposal) {
+        throw new Error("NOT_FOUND:Action proposal not found");
+      }
+
+      if (proposal.expiresAt <= input.now) {
+        await tx.coachActionProposal.updateMany({
+          where: { id: proposal.id, status: "pending" },
+          data: { status: "expired" },
+        });
+        throw new Error("CONFLICT:Action proposal expired");
+      }
+
+      const markExecuted = await tx.coachActionProposal.updateMany({
+        where: {
+          id: proposal.id,
+          userId: input.userId,
+          status: "pending",
+          expiresAt: { gt: input.now },
+        },
+        data: {
+          status: "executed",
+          executedAt: input.now,
+        },
+      });
+
+      if (markExecuted.count === 0) {
+        throw new Error("CONFLICT:Action proposal already processed");
+      }
+
+      if (proposal.type === "create_goal") {
+        const payload = proposal.payload as {
+          title: string;
+          details?: string;
+          targetDate?: string;
+        };
+
+        const createdGoal = await tx.goal.create({
+          data: {
+            userId: input.userId,
+            title: payload.title,
+            details: payload.details,
+            targetDate: payload.targetDate ? new Date(payload.targetDate) : null,
+          },
+        });
+
+        const hydratedGoal = await tx.goal.findUnique({
+          where: { id_userId: { id: createdGoal.id, userId: input.userId } },
+          include: {
+            progressEvents: { orderBy: { createdAt: "desc" } },
+            milestones: { orderBy: { createdAt: "asc" } },
+            goalTags: { orderBy: { createdAt: "asc" }, include: { tag: true } },
+          },
+        });
+
+        return {
+          resultType: "goal_created",
+          goal: hydratedGoal ?? undefined,
+        };
+      }
+
+      if (proposal.type === "update_goal") {
+        const payload = proposal.payload as {
+          goalId: string;
+          title?: string;
+          details?: string;
+          targetDate?: string;
+        };
+
+        const updatedGoal = await tx.goal.update({
+          where: { id_userId: { id: payload.goalId, userId: input.userId } },
+          data: {
+            ...(payload.title !== undefined ? { title: payload.title } : {}),
+            ...(payload.details !== undefined ? { details: payload.details } : {}),
+            ...(payload.targetDate !== undefined
+              ? { targetDate: payload.targetDate ? new Date(payload.targetDate) : null }
+              : {}),
+          },
+        });
+
+        const hydratedGoal = await tx.goal.findUnique({
+          where: { id_userId: { id: updatedGoal.id, userId: input.userId } },
+          include: {
+            progressEvents: { orderBy: { createdAt: "desc" } },
+            milestones: { orderBy: { createdAt: "asc" } },
+            goalTags: { orderBy: { createdAt: "asc" }, include: { tag: true } },
+          },
+        });
+
+        return {
+          resultType: "goal_updated",
+          goal: hydratedGoal ?? undefined,
+          goalId: payload.goalId,
+        };
+      }
+
+      const payload = proposal.payload as { goalId: string };
+      if (input.confirmText !== "DELETE") {
+        throw new Error("BAD_REQUEST:Please type DELETE to confirm.");
+      }
+
+      const archived = await tx.goal.updateMany({
+        where: { id: payload.goalId, userId: input.userId },
+        data: { status: "ARCHIVED" },
+      });
+
+      if (archived.count === 0) {
+        throw new Error("NOT_FOUND:Goal not found");
+      }
+
+      const undoExpiresAt = new Date(input.now.getTime() + 30_000);
+
+      return {
+        resultType: "goal_deleted",
+        goalId: payload.goalId,
+        undoExpiresAt: undoExpiresAt.toISOString(),
+      };
+    }),
+
+  undoDeleteActionProposal: async (input: {
+    userId: string;
+    proposalId: string;
+    now: Date;
+  }): Promise<{ goal?: CoachGoalFull; goalId?: string }> =>
+    prisma.$transaction(async (tx) => {
+      const proposal = await tx.coachActionProposal.findFirst({
+        where: { id: input.proposalId, userId: input.userId },
+        select: {
+          id: true,
+          type: true,
+          payload: true,
+          status: true,
+          executedAt: true,
+        },
+      });
+
+      if (!proposal) {
+        throw new Error("NOT_FOUND:Action proposal not found");
+      }
+      if (proposal.type !== "delete_goal") {
+        throw new Error("BAD_REQUEST:Only delete actions can be undone");
+      }
+      if (proposal.status !== "executed" || !proposal.executedAt) {
+        throw new Error("CONFLICT:Action is not undoable");
+      }
+
+      const undoWindowEnds = new Date(proposal.executedAt.getTime() + 30_000);
+      if (undoWindowEnds <= input.now) {
+        throw new Error("CONFLICT:Undo window expired");
+      }
+
+      const payload = proposal.payload as {
+        goalId: string;
+        previousStatus?: "ACTIVE" | "COMPLETED" | "ARCHIVED";
+      };
+
+      const restored = await tx.goal.updateMany({
+        where: { id: payload.goalId, userId: input.userId },
+        data: {
+          status: payload.previousStatus ?? "ACTIVE",
+        },
+      });
+      if (restored.count === 0) {
+        throw new Error("NOT_FOUND:Goal not found");
+      }
+
+      await tx.coachActionProposal.update({
+        where: { id: proposal.id },
+        data: {
+          status: "cancelled",
+        },
+      });
+
+      const hydratedGoal = await tx.goal.findUnique({
+        where: { id_userId: { id: payload.goalId, userId: input.userId } },
+        include: {
+          progressEvents: { orderBy: { createdAt: "desc" } },
+          milestones: { orderBy: { createdAt: "asc" } },
+          goalTags: { orderBy: { createdAt: "asc" }, include: { tag: true } },
+        },
+      });
+
+      return {
+        goal: hydratedGoal ?? undefined,
+        goalId: payload.goalId,
+      };
+    }),
 };
 
 export type { CoachGoal };

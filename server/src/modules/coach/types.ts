@@ -58,6 +58,57 @@ export type CoachActionCompletionRate = {
 
 export type CoachChatRole = "user" | "assistant";
 
+export type CoachActionType = "create_goal" | "delete_goal" | "update_goal";
+
+export type CoachActionRiskLevel = "low" | "high";
+
+export type CoachCreateGoalActionPayload = {
+  title: string;
+  details?: string;
+  targetDate?: string;
+};
+
+export type CoachDeleteGoalActionPayload = {
+  goalId: string;
+  goalTitle: string;
+  previousStatus?: "ACTIVE" | "COMPLETED" | "ARCHIVED";
+};
+
+export type CoachUpdateGoalActionPayload = {
+  goalId: string;
+  goalTitle: string;
+  title?: string;
+  details?: string;
+  targetDate?: string;
+};
+
+export type CoachActionProposalPayload =
+  | CoachCreateGoalActionPayload
+  | CoachDeleteGoalActionPayload
+  | CoachUpdateGoalActionPayload;
+
+type CoachActionProposalBase = {
+  id: string;
+  label: string;
+  riskLevel: CoachActionRiskLevel;
+  expiresAt: string;
+  status: "pending" | "executed" | "expired" | "cancelled";
+};
+
+export type CoachActionProposalDto =
+  | (CoachActionProposalBase & {
+      type: "create_goal";
+      payload: CoachCreateGoalActionPayload;
+    })
+  | (CoachActionProposalBase & {
+      type: "delete_goal";
+      payload: CoachDeleteGoalActionPayload;
+    })
+  | (CoachActionProposalBase & {
+      type: "update_goal";
+      payload: CoachUpdateGoalActionPayload;
+    });
+
 export type CoachConversationDto = {
   id: string;
   title: string;
@@ -71,10 +122,20 @@ export type CoachMessageDto = {
   role: CoachChatRole;
   content: string;
   createdAt: string;
+  proposedActions?: CoachActionProposalDto[];
 };
 
 export type CoachChatReplyDto = {
   conversation: CoachConversationDto;
   userMessage: CoachMessageDto;
   assistantMessage: CoachMessageDto;
+  proposedActions: CoachActionProposalDto[];
+};
+
+export type ExecuteCoachActionResultDto = {
+  resultType: "goal_created" | "goal_deleted" | "goal_updated";
+  proposalStatus: "executed";
+  goal?: unknown;
+  goalId?: string;
+  undoExpiresAt?: string;
 };

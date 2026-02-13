@@ -99,6 +99,7 @@ model User {
   coachInsight CoachInsight?
   coachActionCompletions CoachActionCompletion[]
   coachConversations CoachConversation[]
+  coachActionProposals CoachActionProposal[]
 }
 
 model GoalTemplate {
@@ -175,6 +176,7 @@ model CoachConversation {
   updatedAt DateTime     @updatedAt
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  CoachMessage[]
+  actionProposals CoachActionProposal[]
 
   @@index([userId, updatedAt])
 }
@@ -186,6 +188,28 @@ model CoachMessage {
   content        String
   createdAt      DateTime          @default(now())
   conversation   CoachConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  actionProposals CoachActionProposal[]
 
+  @@index([conversationId, createdAt])
+}
+
+model CoachActionProposal {
+  id             String            @id @default(uuid())
+  userId         String
+  conversationId String
+  messageId      String
+  type           String
+  label          String
+  payload        Json
+  riskLevel      String
+  status         String            @default("pending")
+  expiresAt      DateTime
+  executedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   CoachConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message        CoachMessage      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, expiresAt])
   @@index([conversationId, createdAt])
 }

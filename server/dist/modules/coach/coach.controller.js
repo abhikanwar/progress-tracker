@@ -36,4 +36,78 @@ export const coachController = {
         const reply = await coachService.sendChatMessage(req.user.id, parsed);
         res.json(reply);
     },
+    sendChatMessageStream: async (req, res) => {
+        const parsed = coachChatMessageSchema.parse(req.body);
+        req.socket.setNoDelay(true);
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.flushHeaders();
+        const writeEvent = (event, payload) => {
+            res.write(`event: ${event}\n`);
+            res.write(`data: ${JSON.stringify(payload)}\n\n`);
+            if (typeof res.flush === "function") {
+                res.flush?.();
+            }
+        };
+        try {
+            res.write(": stream-open\n\n");
+            const reply = await coachService.sendChatMessageStream(req.user.id, parsed, (token) => {
+                writeEvent("token", { token });
+            });
+            writeEvent("done", reply);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "Streaming failed";
+            writeEvent("error", { error: message });
+        }
+        finally {
+            res.end();
+        }
+    },
+    executeChatAction: async (req, res) => {
+        try {
+            const result = await coachService.executeChatAction(req.user.id, req.params.proposalId, req.body?.confirmText);
+            res.json(result);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "Unexpected error";
+            if (message.startsWith("BAD_REQUEST:")) {
+                res.status(400).json({ error: message.replace("BAD_REQUEST:", "").trim() });
+                return;
+            }
+            if (message.startsWith("NOT_FOUND:")) {
+                res.status(404).json({ error: message.replace("NOT_FOUND:", "").trim() });
+                return;
+            }
+            if (message.startsWith("CONFLICT:")) {
+                res.status(409).json({ error: message.replace("CONFLICT:", "").trim() });
+                return;
+            }
+            throw error;
+        }
+    },
+    undoChatAction: async (req, res) => {
+        try {
+            const result = await coachService.undoChatAction(req.user.id, req.params.proposalId);
+            res.json(result);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "Unexpected error";
+            if (message.startsWith("BAD_REQUEST:")) {
+                res.status(400).json({ error: message.replace("BAD_REQUEST:", "").trim() });
+                return;
+            }
+            if (message.startsWith("NOT_FOUND:")) {
+                res.status(404).json({ error: message.replace("NOT_FOUND:", "").trim() });
+                return;
+            }
+            if (message.startsWith("CONFLICT:")) {
+                res.status(409).json({ error: message.replace("CONFLICT:", "").trim() });
+                return;
+            }
+            throw error;
+        }
+    },
 };

@@ -12,6 +12,9 @@ import type {
 } from "../types/goals";
 import type { ApplyTemplateInput, ApplyTemplateResponse, GoalTemplate } from "../types/templates";
 import type {
+  ExecuteCoachActionInput,
+  ExecuteCoachActionResult,
+  UndoCoachActionInput,
   CoachChatMessage,
   CoachChatReply,
   CoachCompletionRate,
@@ -162,5 +165,96 @@ export const coachApi = {
     apiFetch<CoachChatReply>("/coach/chat/message", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  sendMessageStream: async (input: {
+    conversationId?: string;
+    message: string;
+    onToken?: (token: string) => void;
+    signal?: AbortSignal;
+  }) => {
+    const token = authStorage.getToken();
+    const res = await fetch(`${API_URL}/coach/chat/message/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        conversationId: input.conversationId,
+        message: input.message,
+      }),
+      signal: input.signal,
+    });
+
+    if (!res.ok || !res.body) {
+      const message = await res.text();
+      throw new ApiError(res.status, message || "Failed to stream coach message");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalReply: CoachChatReply | null = null;
+
+    const parseEvent = (chunk: string) => {
+      const lines = chunk.split(/\r?\n/);
+      let event = "message";
+      const dataLines: string[] = [];
+
+      for (const line of lines) {
+        if (line.startsWith("event:")) {
+          event = line.slice(6).trim();
+        } else if (line.startsWith("data:")) {
+          const value = line.startsWith("data: ") ? line.slice(6) : line.slice(5);
+          dataLines.push(value);
+        }
+      }
+
+      return { event, data: dataLines.join("\n") };
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const events = buffer.split(/\r?\n\r?\n/);
+      buffer = events.pop() ?? "";
+
+      for (const rawEvent of events) {
+        if (!rawEvent.trim()) continue;
+        const { event, data } = parseEvent(rawEvent);
+        if (!data) continue;
+
+        const parsed = JSON.parse(data) as Record<string, unknown>;
+        if (event === "token") {
+          const tokenValue = parsed.token;
+          if (typeof tokenValue === "string") {
+            input.onToken?.(tokenValue);
+          }
+        } else if (event === "done") {
+          finalReply = parsed as unknown as CoachChatReply;
+        } else if (event === "error") {
+          const message =
+            typeof parsed.error === "string" ? parsed.error : "Coach stream failed";
+          throw new Error(message);
+        }
+      }
+    }
+
+    if (!finalReply) {
+      throw new Error("Coach stream ended without a final reply");
+    }
+
+    return finalReply;
+  },
+  executeChatAction: (payload: ExecuteCoachActionInput) =>
+    apiFetch<ExecuteCoachActionResult>(`/coach/chat/actions/${payload.proposalId}/execute`, {
+      method: "POST",
+      body: JSON.stringify({ confirmText: payload.confirmText }),
+    }),
+  undoChatAction: (payload: UndoCoachActionInput) =>
+    apiFetch<ExecuteCoachActionResult>(`/coach/chat/actions/${payload.proposalId}/undo`, {
+      method: "POST",
     }),
 };

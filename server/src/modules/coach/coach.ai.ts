@@ -211,3 +211,123 @@ export const generateCoachChatReply = async (input: {
     clearTimeout(timeout);
   }
 };
+
+const extractStreamToken = (line: string): string | null => {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("data:")) return null;
+  const payload = trimmed.slice("data:".length).trim();
+  if (!payload || payload === "[DONE]") return null;
+
+  try {
+    const parsed = JSON.parse(payload) as {
+      choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>;
+    };
+    return parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const generateCoachChatReplyStream = async (
+  input: {
+    goals: CoachGoal[];
+    latestSummary: CoachSummary | null;
+    history: CoachMessageDto[];
+    userMessage: string;
+  },
+  onToken: (token: string) => void
+): Promise<string | null> => {
+  if (!env.openRouterApiKey) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.openRouterApiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": env.clientOrigin,
+        "X-Title": "Progress Tracker",
+      },
+      body: JSON.stringify({
+        model: env.openRouterModel,
+        temperature: 0.3,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an execution-first personal coach. Keep replies under 180 words and action-oriented.",
+          },
+          {
+            role: "user",
+            content: buildChatPrompt(input),
+          },
+        ],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok || !response.body) return null;
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let raw = "";
+    let content = "";
+    let tokenCount = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      raw += chunk;
+      buffer += chunk;
+
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const token = extractStreamToken(line);
+        if (!token) continue;
+        content += token;
+        tokenCount += 1;
+        onToken(token);
+      }
+    }
+
+    const tailToken = extractStreamToken(buffer);
+    if (tailToken) {
+      content += tailToken;
+      tokenCount += 1;
+      onToken(tailToken);
+    }
+
+    if (tokenCount === 0) {
+      try {
+        const parsed = JSON.parse(raw) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const fallbackContent = parsed.choices?.[0]?.message?.content?.trim();
+        if (fallbackContent) {
+          const chunks = fallbackContent.split(/(\s+)/).filter((part) => part.length > 0);
+          for (const chunk of chunks) {
+            onToken(chunk);
+          }
+          return fallbackContent;
+        }
+      } catch {
+        // no-op: keep null fallback below
+      }
+    }
+
+    const trimmed = content.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+};

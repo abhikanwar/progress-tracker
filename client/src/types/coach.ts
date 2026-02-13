@@ -56,6 +56,50 @@ export type CoachCompletionRate = {
 
 export type CoachChatRole = "user" | "assistant";
 
+export type CoachActionType = "create_goal" | "delete_goal" | "update_goal";
+
+export type CoachCreateGoalActionPayload = {
+  title: string;
+  details?: string;
+  targetDate?: string;
+};
+
+export type CoachDeleteGoalActionPayload = {
+  goalId: string;
+  goalTitle: string;
+  previousStatus?: "ACTIVE" | "COMPLETED" | "ARCHIVED";
+};
+
+export type CoachUpdateGoalActionPayload = {
+  goalId: string;
+  goalTitle: string;
+  title?: string;
+  details?: string;
+  targetDate?: string;
+};
+
+type CoachActionProposalBase = {
+  id: string;
+  label: string;
+  riskLevel: "low" | "high";
+  expiresAt: string;
+  status: "pending" | "executed" | "expired" | "cancelled";
+};
+
+export type CoachActionProposal =
+  | (CoachActionProposalBase & {
+      type: "create_goal";
+      payload: CoachCreateGoalActionPayload;
+    })
+  | (CoachActionProposalBase & {
+      type: "delete_goal";
+      payload: CoachDeleteGoalActionPayload;
+    })
+  | (CoachActionProposalBase & {
+      type: "update_goal";
+      payload: CoachUpdateGoalActionPayload;
+    });
+
 export type CoachConversation = {
   id: string;
   title: string;
@@ -69,10 +113,30 @@ export type CoachChatMessage = {
   role: CoachChatRole;
   content: string;
   createdAt: string;
+  proposedActions?: CoachActionProposal[];
 };
 
 export type CoachChatReply = {
   conversation: CoachConversation;
   userMessage: CoachChatMessage;
   assistantMessage: CoachChatMessage;
+  proposedActions: CoachActionProposal[];
 };
+
+export type ExecuteCoachActionInput = {
+  proposalId: string;
+  confirmText?: string;
+};
+
+export type ExecuteCoachActionResult = {
+  resultType: "goal_created" | "goal_deleted" | "goal_updated";
+  proposalStatus: "executed";
+  goal?: Goal;
+  goalId?: string;
+  undoExpiresAt?: string;
+};
+
+export type UndoCoachActionInput = {
+  proposalId: string;
+};
+import type { Goal } from "./goals";
