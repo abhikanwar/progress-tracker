@@ -24,6 +24,7 @@ const MobileQuickActions = () => {
   const [progressNote, setProgressNote] = useState("");
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pulseKey, setPulseKey] = useState<"goal" | "progress" | "milestone" | null>(null);
 
   useEffect(() => {
     if (!dialogOpen || !isMobile) return;
@@ -51,6 +52,13 @@ const MobileQuickActions = () => {
     setDialogOpen(true);
   };
 
+  const triggerPulse = (key: "goal" | "progress" | "milestone") => {
+    setPulseKey(key);
+    setTimeout(() => {
+      setPulseKey((prev) => (prev === key ? null : prev));
+    }, 220);
+  };
+
   const submit = async () => {
     try {
       setSubmitting(true);
@@ -64,6 +72,7 @@ const MobileQuickActions = () => {
         await goalsApi.create({ title });
         setGoalTitle("");
         toast.success("Priority added.");
+        triggerPulse("goal");
       }
 
       if (action === "progress") {
@@ -78,6 +87,7 @@ const MobileQuickActions = () => {
         });
         setProgressNote("");
         toast.success("Progress logged.");
+        triggerPulse("progress");
       }
 
       if (action === "milestone") {
@@ -94,6 +104,7 @@ const MobileQuickActions = () => {
         await goalsApi.addMilestone(selectedGoalId, { title });
         setMilestoneTitle("");
         toast.success("Milestone added.");
+        triggerPulse("milestone");
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Action failed";
@@ -109,13 +120,13 @@ const MobileQuickActions = () => {
         <Card className="mx-auto max-w-md">
           <CardContent className="grid grid-cols-3 gap-2 p-2">
             <Button size="sm" onClick={() => openAction("goal")}>
-              + Goal
+              <span className={pulseKey === "goal" ? "pulse-pop" : ""}>+ Goal</span>
             </Button>
             <Button size="sm" variant="outline" onClick={() => openAction("progress")}>
-              + Progress
+              <span className={pulseKey === "progress" ? "pulse-pop" : ""}>+ Progress</span>
             </Button>
             <Button size="sm" variant="outline" onClick={() => openAction("milestone")}>
-              + Milestone
+              <span className={pulseKey === "milestone" ? "pulse-pop" : ""}>+ Milestone</span>
             </Button>
           </CardContent>
         </Card>
@@ -204,7 +215,12 @@ const MobileQuickActions = () => {
             )}
 
             <div className="flex justify-end">
-              <Button onClick={submit} disabled={submitting} aria-busy={submitting}>
+              <Button
+                onClick={submit}
+                disabled={submitting}
+                aria-busy={submitting}
+                className={pulseKey === action ? "pulse-pop" : ""}
+              >
                 {submitting ? "Saving..." : "Save"}
               </Button>
             </div>

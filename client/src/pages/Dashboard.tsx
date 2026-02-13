@@ -132,6 +132,7 @@ export const Dashboard = () => {
   const [progressNote, setProgressNote] = useState("");
   const [milestoneDrafts, setMilestoneDrafts] = useState<Record<string, string>>({});
   const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({});
+  const [pulseKey, setPulseKey] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<GoalInput>({
     title: "",
     details: "",
@@ -170,6 +171,13 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const triggerPulse = (key: string) => {
+    setPulseKey(key);
+    setTimeout(() => {
+      setPulseKey((prev) => (prev === key ? null : prev));
+    }, 220);
   };
 
   useEffect(() => {
@@ -323,11 +331,13 @@ export const Dashboard = () => {
         );
         await goalsApi.update(editingGoal.id, payload);
         toast.success("Goal updated.");
+        triggerPulse(`goal-${editingGoal.id}`);
       } else {
         const tempGoal = createTempGoal(payload);
         setGoals((prev) => [tempGoal, ...prev]);
         await goalsApi.create(payload);
         toast.success("Goal created.");
+        triggerPulse("new-goal");
       }
       void loadGoals();
     } catch (err) {
@@ -343,6 +353,7 @@ export const Dashboard = () => {
     try {
       await goalsApi.remove(goal.id);
       toast.success("Goal deleted.");
+      triggerPulse("new-goal");
     } catch (err) {
       setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to delete goal";
@@ -391,6 +402,7 @@ export const Dashboard = () => {
         note: progressNote.trim() || undefined,
       });
       toast.success("Progress updated.");
+      triggerPulse(`goal-${progressGoal.id}`);
       void loadGoals();
     } catch (err) {
       setGoals(previousGoals);
@@ -426,6 +438,7 @@ export const Dashboard = () => {
     try {
       await goalsApi.addMilestone(goal.id, { title });
       toast.success("Milestone added.");
+      triggerPulse(`goal-${goal.id}`);
       void loadGoals();
     } catch (err) {
       setGoals(previousGoals);
@@ -442,6 +455,7 @@ export const Dashboard = () => {
   ) => {
     try {
       await goalsApi.updateMilestone(goalId, milestoneId, { completed });
+      triggerPulse(`goal-${goalId}`);
       await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update milestone";
@@ -453,6 +467,7 @@ export const Dashboard = () => {
     try {
       await goalsApi.removeMilestone(goalId, milestoneId);
       toast.success("Milestone removed.");
+      triggerPulse(`goal-${goalId}`);
       await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to remove milestone";
@@ -467,6 +482,7 @@ export const Dashboard = () => {
       await goalsApi.addTag(goal.id, tagName);
       setTagDrafts((prev) => ({ ...prev, [goal.id]: "" }));
       toast.success("Tag added.");
+      triggerPulse(`goal-${goal.id}`);
       await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to add tag";
@@ -478,6 +494,7 @@ export const Dashboard = () => {
     try {
       await goalsApi.removeTag(goalId, tagId);
       toast.success("Tag removed.");
+      triggerPulse(`goal-${goalId}`);
       await loadGoals();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to remove tag";
@@ -493,11 +510,13 @@ export const Dashboard = () => {
           <h1 className="page-title">Weekly execution</h1>
         </div>
         <div className="page-actions">
-          <Button onClick={openCreate}>New goal</Button>
+          <Button className={pulseKey === "new-goal" ? "pulse-pop" : ""} onClick={openCreate}>
+            New goal
+          </Button>
         </div>
       </header>
 
-      <Card className="motion-enter">
+      <Card>
         <CardHeader>
           <CardTitle className="section-title">Weekly planning</CardTitle>
           <CardDescription>
@@ -673,7 +692,7 @@ export const Dashboard = () => {
                   )}
 
                   {filteredGoals.map((goal) => (
-                    <Card key={goal.id}>
+                    <Card key={goal.id} className={pulseKey === `goal-${goal.id}` ? "pulse-pop" : ""}>
                       <CardHeader>
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -691,8 +710,8 @@ export const Dashboard = () => {
                           </div>
                           <div className="mt-2 h-2 w-full rounded-full bg-muted">
                             <div
-                              className="h-2 rounded-full bg-foreground"
-                              style={{ width: `${goal.currentProgress}%` }}
+                              className="h-2 rounded-full bg-foreground transition-[width] duration-300 ease-out"
+                              style={{ width: `${Math.max(0, Math.min(100, goal.currentProgress))}%` }}
                             />
                           </div>
                         </div>
@@ -895,7 +914,9 @@ export const Dashboard = () => {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>{editingGoal ? "Save" : "Create"}</Button>
+            <Button className={pulseKey === "new-goal" ? "pulse-pop" : ""} onClick={handleSave}>
+              {editingGoal ? "Save" : "Create"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -938,7 +959,9 @@ export const Dashboard = () => {
             <Button variant="outline" onClick={() => setProgressDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleProgressSubmit}>Save update</Button>
+            <Button className={pulseKey?.startsWith("goal-") ? "pulse-pop" : ""} onClick={handleProgressSubmit}>
+              Save update
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

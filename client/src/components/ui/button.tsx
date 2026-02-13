@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 const buttonVariants = cva(
-  "tap-target inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ui-transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98]",
+  "tap-target pressable inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ui-transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:pointer-events-none disabled:opacity-60",
   {
     variants: {
       variant: {
@@ -40,7 +40,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         className={cn(
           buttonVariants({ variant, size }),
-          isLoading && "cursor-wait",
+          isLoading && "cursor-wait opacity-90",
           className
         )}
         ref={ref}

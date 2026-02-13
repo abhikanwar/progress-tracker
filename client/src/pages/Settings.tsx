@@ -103,7 +103,7 @@ export const SettingsPage = () => {
   };
 
   return (
-    <div className="space-y-6 motion-enter">
+    <div className="space-y-6 motion-enter stagger-children">
       <div className="page-header">
         <div>
           <p className="page-kicker">Settings</p>
@@ -116,7 +116,7 @@ export const SettingsPage = () => {
         </div>
       </div>
 
-      <Card className="motion-enter">
+      <Card>
         <CardHeader>
           <CardTitle className="section-title">Account</CardTitle>
           <CardDescription>Profile details associated with your account.</CardDescription>
@@ -143,7 +143,7 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      <Card className="motion-enter">
+      <Card>
         <CardHeader>
           <CardTitle className="section-title">Timezone</CardTitle>
           <CardDescription>
@@ -170,7 +170,7 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      <Card className="motion-enter">
+      <Card>
         <CardHeader>
           <CardTitle className="section-title">Security</CardTitle>
           <CardDescription>Change your account password.</CardDescription>

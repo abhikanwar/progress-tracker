@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { goalsApi } from "../lib/api";
 import type { Goal } from "../types/goals";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -40,6 +40,8 @@ export const CalendarPage = () => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
+  const hasAnimatedRef = useRef(false);
+  const [playIntro, setPlayIntro] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -105,6 +107,19 @@ export const CalendarPage = () => {
     return { total, days };
   }, [eventsByDay, timezone]);
 
+  useEffect(() => {
+    if (!loading && !hasAnimatedRef.current) {
+      hasAnimatedRef.current = true;
+      setPlayIntro(true);
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (!playIntro) return;
+    const timer = setTimeout(() => setPlayIntro(false), 900);
+    return () => clearTimeout(timer);
+  }, [playIntro]);
+
   return (
     <div className="space-y-6 motion-enter">
       <div className="page-header">
@@ -155,7 +170,7 @@ export const CalendarPage = () => {
                 ))}
               </div>
               <div className="mt-2 grid grid-cols-7 gap-1 sm:mt-3 sm:gap-2">
-                {calendarDays.map((date) => {
+                {calendarDays.map((date, index) => {
                   const key = formatDateKey(date, timezone);
                   const isCurrentMonth = date.getMonth() === monthCursor.getMonth();
                   const eventCount = eventsByDay.get(key) ?? 0;
@@ -167,7 +182,8 @@ export const CalendarPage = () => {
                       key={key}
                       className={`min-h-[72px] rounded-lg border border-border/60 p-1 text-[10px] sm:min-h-[96px] sm:rounded-2xl sm:p-2 sm:text-xs ${
                         isCurrentMonth ? "bg-card" : "bg-muted/30 text-muted-foreground"
-                      }`}
+                      } ${playIntro ? "animate-once bar-grow" : ""}`}
+                      style={playIntro ? { animationDelay: `${(index % 7) * 20}ms` } : undefined}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold">{date.getDate()}</span>
@@ -233,10 +249,13 @@ export const CalendarPage = () => {
                 {weekSummary.days.map((count, idx) => (
                   <div key={`${idx}-${count}`} className="flex flex-col items-center gap-2">
                     <div
-                      className={`h-12 w-full rounded-xl ${
+                      className={`h-12 w-full rounded-xl ${playIntro ? "animate-once bar-grow" : ""} ${
                         count === 0 ? "bg-muted" : count < 2 ? "bg-foreground/40" : "bg-foreground"
                       }`}
-                      style={{ opacity: count === 0 ? 0.4 : 1 }}
+                      style={{
+                        opacity: count === 0 ? 0.4 : 1,
+                        animationDelay: playIntro ? `${idx * 34}ms` : undefined,
+                      }}
                     />
                     <span className="text-[10px] text-muted-foreground">{dayNames[idx]}</span>
                   </div>

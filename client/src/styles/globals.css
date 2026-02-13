@@ -25,6 +25,7 @@
   --motion-fast: 140ms;
   --motion-base: 220ms;
   --motion-slow: 320ms;
+  --motion-kpi: 800ms;
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -103,6 +104,16 @@ body {
 .ui-transition {
   transition-duration: var(--motion-base);
   transition-timing-function: var(--ease-smooth);
+}
+
+.pressable {
+  transform-origin: center;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-smooth);
+}
+
+.pressable:active {
+  transform: scale(0.98);
 }
 
 @media (max-width: 900px) {
@@ -199,6 +210,30 @@ body {
   }
 }
 
+@keyframes bar-grow {
+  from {
+    opacity: 0;
+    transform: scaleY(0.78);
+    transform-origin: bottom;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pulse-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .motion-enter {
   animation: fade-up var(--motion-slow) var(--ease-smooth) both;
 }
@@ -214,6 +249,19 @@ body {
 .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
 .stagger-children > *:nth-child(5) { animation-delay: 190ms; }
 .stagger-children > *:nth-child(6) { animation-delay: 230ms; }
+
+.animate-once {
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
+
+.bar-grow {
+  animation: bar-grow var(--motion-base) var(--ease-smooth) both;
+}
+
+.pulse-pop {
+  animation: pulse-pop 180ms var(--ease-smooth);
+}
 
 .page-kicker {
   font-size: 0.7rem;
@@ -257,5 +305,12 @@ body {
 
   .shimmer-skeleton::after {
     animation: none;
+  }
+
+  .bar-grow,
+  .pulse-pop,
+  .motion-enter,
+  .stagger-children > * {
+    animation: none !important;
   }
 }

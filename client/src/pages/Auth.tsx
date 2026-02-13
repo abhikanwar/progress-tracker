@@ -44,7 +44,7 @@ export const AuthPage = () => {
       </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-6 py-16">
-        <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] stagger-children">
           <div className="hidden flex-col justify-center gap-6 rounded-3xl border border-border/60 bg-card p-10 shadow-card lg:flex">
             <div className="inline-flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-foreground text-background">

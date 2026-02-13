@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { goalsApi } from "../lib/api";
 import type { Goal } from "../types/goals";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
 import {
   formatDateInTimezone,
@@ -11,12 +11,15 @@ import {
 import { settingsStorage } from "../lib/settings";
 import { Skeleton } from "../components/ui/skeleton";
 import { CalloutPanel, MetricCard, TrendBadge } from "../components/ui/demo-blocks";
+import { useCountUp } from "../hooks/useCountUp";
 
 export const Analytics = () => {
   const timezone = settingsStorage.getResolvedTimezone();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [presentationMode, setPresentationMode] = useState(false);
+  const hasAnimatedRef = useRef(false);
+  const [playIntro, setPlayIntro] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -167,6 +170,56 @@ export const Analytics = () => {
     };
   }, [executive.atRisk, executive.onTrack, summary.completed]);
 
+  useEffect(() => {
+    if (!loading && !hasAnimatedRef.current) {
+      hasAnimatedRef.current = true;
+      setPlayIntro(true);
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (!playIntro) return;
+    const timer = setTimeout(() => setPlayIntro(false), 900);
+    return () => clearTimeout(timer);
+  }, [playIntro]);
+
+  const onTrackAnimated = Math.round(
+    useCountUp(executive.onTrack, {
+      durationMs: 800,
+      play: !loading && playIntro,
+    })
+  );
+  const atRiskAnimated = Math.round(
+    useCountUp(executive.atRisk, {
+      durationMs: 800,
+      play: !loading && playIntro,
+    })
+  );
+  const completionAnimated = Math.round(
+    useCountUp(executive.completionRate, {
+      durationMs: 800,
+      play: !loading && playIntro,
+    })
+  );
+  const momentumAnimated = Math.round(
+    useCountUp(executive.momentumScore, {
+      durationMs: 800,
+      play: !loading && playIntro,
+    })
+  );
+  const rollingCurrentAnimated = Math.round(
+    useCountUp(executive.rollingCurrent, {
+      durationMs: 800,
+      play: !loading && playIntro,
+    })
+  );
+  const completedWeekAnimated = Math.round(
+    useCountUp(executive.completedThisWeek, {
+      durationMs: 800,
+      play: !loading && playIntro,
+    })
+  );
+
   return (
     <div className="space-y-6 motion-enter">
       <div className="page-header">
@@ -187,10 +240,10 @@ export const Analytics = () => {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 stagger-children">
         {[
-          { label: "On track", value: executive.onTrack },
-          { label: "At risk", value: executive.atRisk },
-          { label: "Completion rate", value: `${executive.completionRate}%` },
-          { label: "Momentum score", value: executive.momentumScore },
+          { label: "On track", value: onTrackAnimated },
+          { label: "At risk", value: atRiskAnimated },
+          { label: "Completion rate", value: `${completionAnimated}%` },
+          { label: "Momentum score", value: momentumAnimated },
         ].map((stat) => (
           <MetricCard key={stat.label} label={stat.label} value={stat.value} loading={loading} />
         ))}
@@ -205,7 +258,7 @@ export const Analytics = () => {
             <div className="rounded-xl border border-border/70 p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Updates</p>
               <p className="mt-2 text-3xl font-semibold">
-                {loading ? <Skeleton className="h-8 w-24" /> : executive.rollingCurrent}
+                {loading ? <Skeleton className="h-8 w-24" /> : rollingCurrentAnimated}
               </p>
               <p className="text-xs text-muted-foreground">
                 Last 7 days vs previous 7 days.
@@ -217,7 +270,7 @@ export const Analytics = () => {
                 Goals completed
               </p>
               <p className="mt-2 text-3xl font-semibold">
-                {loading ? <Skeleton className="h-8 w-24" /> : executive.completedThisWeek}
+                {loading ? <Skeleton className="h-8 w-24" /> : completedWeekAnimated}
               </p>
               <p className="text-xs text-muted-foreground">
                 Last 7 days vs previous 7 days.
@@ -235,8 +288,13 @@ export const Analytics = () => {
             {loading ? (
               <Skeleton className="h-32 w-32 rounded-full" />
             ) : (
-              <div className="relative h-32 w-32 rounded-full" style={donutStyle}>
-                <div className="absolute inset-4 grid place-items-center rounded-full bg-card text-xs font-medium">
+              <div className={`relative h-32 w-32 rounded-full ${playIntro ? "animate-once bar-grow" : ""}`} style={donutStyle}>
+                <div
+                  className={`absolute inset-4 grid place-items-center rounded-full bg-card text-xs font-medium ${
+                    playIntro ? "animate-once bar-grow" : ""
+                  }`}
+                  style={{ animationDelay: "80ms" }}
+                >
                   {summary.total}
                 </div>
               </div>
@@ -284,15 +342,16 @@ export const Analytics = () => {
               </p>
               <div className="mt-3 overflow-x-auto">
                 <div className="grid min-w-0 grid-cols-7 gap-1.5 sm:gap-2">
-                  {activity.days.map((day) => {
+                  {activity.days.map((day, index) => {
                     const intensity =
                       day.count >= 4 ? "bg-foreground" : day.count >= 2 ? "bg-foreground/60" : "";
                     return (
                       <div
                         key={day.key}
-                        className={`h-9 rounded-lg sm:h-12 sm:rounded-xl ${
+                        className={`h-9 rounded-lg sm:h-12 sm:rounded-xl ${playIntro ? "animate-once bar-grow" : ""} ${
                           day.count === 0 ? "bg-muted" : intensity
                         }`}
+                        style={playIntro ? { animationDelay: `${(index % 7) * 28}ms` } : undefined}
                         title={`${formatDateInTimezone(day.date, timezone)} • ${day.count} updates`}
                       />
                     );
@@ -341,7 +400,9 @@ export const Analytics = () => {
                       </span>
                       <div className="h-2 flex-1 rounded-full bg-muted">
                         <div
-                          className="h-2 rounded-full bg-foreground"
+                          className={`h-2 rounded-full bg-foreground transition-[width] duration-300 ease-out ${
+                            playIntro ? "animate-once bar-grow" : ""
+                          }`}
                           style={{ width: `${Math.min(day.count * 20, 100)}%` }}
                         />
                       </div>
