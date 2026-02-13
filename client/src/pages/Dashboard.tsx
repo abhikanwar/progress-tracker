@@ -18,6 +18,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
+import { Skeleton } from "../components/ui/skeleton";
 import { toast } from "sonner";
 import type { Goal, GoalInput, GoalStatus, ProgressEvent, Tag } from "../types/goals";
 import { goalsApi } from "../lib/api";
@@ -417,6 +418,27 @@ export const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
+          {loading && (
+            <>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </>
+          )}
+          {!loading && (
+            <>
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Top 3 this week ({weeklyPlan.topThree.length})
@@ -461,6 +483,8 @@ export const Dashboard = () => {
               </div>
             ))}
           </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -529,7 +553,24 @@ export const Dashboard = () => {
         </div>
 
         <TabsContent value={status} className="flex-1 min-h-0">
-          {loading && <p className="text-sm text-muted-foreground">Loading goals...</p>}
+          {loading && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {Array.from({ length: 4 }, (_, idx) => (
+                <Card key={`goal-skeleton-${idx}`}>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="mt-2 h-4 w-5/6" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-8 w-1/2" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {!loading && !error && (

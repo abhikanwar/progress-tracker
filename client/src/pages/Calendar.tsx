@@ -10,6 +10,7 @@ import {
   getDayDifferenceFromTodayInTimezone,
 } from "../lib/datetime";
 import { settingsStorage } from "../lib/settings";
+import { Skeleton } from "../components/ui/skeleton";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -199,7 +200,12 @@ export const CalendarPage = () => {
                 </div>
               </div>
             </div>
-            {loading && <p className="mt-4 text-sm text-muted-foreground">Loading...</p>}
+            {loading && (
+              <div className="mt-4 grid gap-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -210,7 +216,8 @@ export const CalendarPage = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm text-muted-foreground">
-                Progress updates logged: <span className="font-semibold">{weekSummary.total}</span>
+                Progress updates logged:{" "}
+                <span className="font-semibold">{loading ? "—" : weekSummary.total}</span>
               </div>
               <div className="grid grid-cols-7 gap-2">
                 {weekSummary.days.map((count, idx) => (
@@ -234,6 +241,13 @@ export const CalendarPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm">
+                {loading &&
+                  Array.from({ length: 3 }, (_, idx) => (
+                    <div key={`calendar-target-skeleton-${idx}`} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  ))}
                 {goals
                   .filter((goal) => goal.targetDate && goal.status === "ACTIVE")
                   .sort(
@@ -241,6 +255,7 @@ export const CalendarPage = () => {
                       new Date(a.targetDate ?? 0).getTime() - new Date(b.targetDate ?? 0).getTime()
                   )
                   .slice(0, 5)
+                  .filter(() => !loading)
                   .map((goal) => (
                     <div key={goal.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

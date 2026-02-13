@@ -9,6 +9,7 @@ import { authApi } from "../lib/api";
 import { settingsStorage } from "../lib/settings";
 import { toast } from "sonner";
 import { formatDateInTimezone } from "../lib/datetime";
+import { Skeleton } from "../components/ui/skeleton";
 
 const fallbackTimezones = [
   "UTC",
@@ -116,13 +117,21 @@ export const SettingsPage = () => {
         <CardContent className="space-y-3 text-sm">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Email</p>
-            <p className="font-medium">{loadingProfile ? "Loading..." : email || "—"}</p>
+            {loadingProfile ? (
+              <Skeleton className="mt-1 h-5 w-48" />
+            ) : (
+              <p className="font-medium">{email || "—"}</p>
+            )}
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Member since</p>
-            <p className="font-medium">
-              {loadingProfile || !createdAt ? "—" : formatDateInTimezone(createdAt, timezone)}
-            </p>
+            {loadingProfile ? (
+              <Skeleton className="mt-1 h-5 w-28" />
+            ) : (
+              <p className="font-medium">
+                {!createdAt ? "—" : formatDateInTimezone(createdAt, timezone)}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

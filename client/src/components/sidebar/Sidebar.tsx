@@ -1,6 +1,5 @@
 import { BarChart3, Calendar, LayoutGrid, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Button } from "../ui/button";
 import { ThemeToggle } from "../ThemeToggle";
 import {
   Sidebar as UiSidebar,
@@ -12,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "../ui/sidebar";
 
 const navItems = [
@@ -29,14 +27,13 @@ const isPathActive = (pathname: string, to: string) => {
 
 export const Sidebar = () => {
   const { pathname } = useLocation();
-  const { toggleSidebar } = useSidebar();
 
   return (
     <UiSidebar collapsible="icon" variant="floating" className="border-r-0">
       <SidebarHeader>
-        <div className="flex items-center justify-between gap-2 px-2">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
+        <div className="flex items-center gap-2 overflow-hidden px-2">
+          <div className="flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
               PT
             </div>
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
@@ -44,14 +41,6 @@ export const Sidebar = () => {
               <p className="truncate text-xs text-muted-foreground">Goals & momentum</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="h-8 px-2 text-xs group-data-[collapsible=icon]:hidden"
-          >
-            Collapse
-          </Button>
         </div>
       </SidebarHeader>
 

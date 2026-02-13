@@ -9,6 +9,7 @@ import {
   getDayDifferenceFromTodayInTimezone,
 } from "../lib/datetime";
 import { settingsStorage } from "../lib/settings";
+import { Skeleton } from "../components/ui/skeleton";
 
 export const Analytics = () => {
   const timezone = settingsStorage.getResolvedTimezone();
@@ -193,7 +194,7 @@ export const Analytics = () => {
               <CardTitle className="text-sm text-muted-foreground">{stat.label}</CardTitle>
             </CardHeader>
             <CardContent className="text-2xl font-semibold">
-              {loading ? "—" : stat.value}
+              {loading ? <Skeleton className="h-8 w-20" /> : stat.value}
             </CardContent>
           </Card>
         ))}
@@ -207,7 +208,9 @@ export const Analytics = () => {
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-border/70 p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Updates</p>
-              <p className="mt-2 text-3xl font-semibold">{executive.rollingCurrent}</p>
+              <p className="mt-2 text-3xl font-semibold">
+                {loading ? <Skeleton className="h-8 w-24" /> : executive.rollingCurrent}
+              </p>
               <p className="text-xs text-muted-foreground">
                 Last 7 days vs previous 7 days: {executive.updatesDelta >= 0 ? "+" : ""}
                 {executive.updatesDelta}%
@@ -217,7 +220,9 @@ export const Analytics = () => {
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Goals completed
               </p>
-              <p className="mt-2 text-3xl font-semibold">{executive.completedThisWeek}</p>
+              <p className="mt-2 text-3xl font-semibold">
+                {loading ? <Skeleton className="h-8 w-24" /> : executive.completedThisWeek}
+              </p>
               <p className="text-xs text-muted-foreground">
                 Last 7 days vs previous 7 days: {executive.completedDelta >= 0 ? "+" : ""}
                 {executive.completedDelta}%
@@ -231,11 +236,15 @@ export const Analytics = () => {
             <CardTitle className="text-base">Status distribution</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-6">
-            <div className="relative h-32 w-32 rounded-full" style={donutStyle}>
-              <div className="absolute inset-4 grid place-items-center rounded-full bg-card text-xs font-medium">
-                {summary.total}
+            {loading ? (
+              <Skeleton className="h-32 w-32 rounded-full" />
+            ) : (
+              <div className="relative h-32 w-32 rounded-full" style={donutStyle}>
+                <div className="absolute inset-4 grid place-items-center rounded-full bg-card text-xs font-medium">
+                  {summary.total}
+                </div>
               </div>
-            </div>
+            )}
             <div className="space-y-2 text-sm">
               <p className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -348,26 +357,34 @@ export const Analytics = () => {
 
       {!presentationMode && (
         <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Latest goal updates</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {goals.length === 0 && !loading && (
-              <p className="text-sm text-muted-foreground">No data yet.</p>
-            )}
-            {goals.slice(0, 6).map((goal) => (
-              <div key={goal.id} className="rounded-xl border border-border p-3 text-sm">
-                <p className="font-medium">{goal.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {goal.progressEvents?.[0]
-                    ? `Latest update: ${goal.progressEvents[0].value}%`
-                    : "No progress events"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
+          <CardHeader>
+            <CardTitle className="text-base">Latest goal updates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {loading &&
+                Array.from({ length: 4 }, (_, idx) => (
+                  <div key={`analytics-updates-skeleton-${idx}`} className="rounded-xl border border-border p-3">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="mt-2 h-3 w-1/2" />
+                  </div>
+                ))}
+              {goals.length === 0 && !loading && (
+                <p className="text-sm text-muted-foreground">No data yet.</p>
+              )}
+              {!loading &&
+                goals.slice(0, 6).map((goal) => (
+                  <div key={goal.id} className="rounded-xl border border-border p-3 text-sm">
+                    <p className="font-medium">{goal.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {goal.progressEvents?.[0]
+                        ? `Latest update: ${goal.progressEvents[0].value}%`
+                        : "No progress events"}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
         </Card>
       )}
     </div>

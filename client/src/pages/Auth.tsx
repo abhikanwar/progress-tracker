@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Skeleton } from "../components/ui/skeleton";
 
 export const AuthPage = () => {
   const navigate = useNavigate();
@@ -37,13 +38,14 @@ export const AuthPage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-sky-200/50 blur-3xl" />
-        <div className="absolute -bottom-32 left-0 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl" />
+        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-cyan-200/50 blur-3xl dark:bg-cyan-500/20" />
+        <div className="absolute -bottom-32 left-0 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/20 dark:to-slate-950/30" />
       </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-6 py-16">
         <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="hidden flex-col justify-center gap-6 rounded-3xl border border-white/40 bg-white/60 p-10 shadow-card backdrop-blur lg:flex">
+          <div className="hidden flex-col justify-center gap-6 rounded-3xl border border-border/60 bg-card/90 p-10 shadow-card backdrop-blur lg:flex">
             <div className="inline-flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-foreground text-background">
                 <div className="flex h-full w-full items-center justify-center text-lg font-semibold">
@@ -62,16 +64,16 @@ export const AuthPage = () => {
               highlights your wins.
             </p>
             <div className="grid gap-4 text-sm text-muted-foreground">
-              <div className="rounded-2xl border border-white/50 bg-white/70 p-4">
+              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                 “It feels like a calm, organized sprint each day.”
               </div>
-              <div className="rounded-2xl border border-white/50 bg-white/70 p-4">
+              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                 Weekly focus, quick updates, and a snapshot of what matters most.
               </div>
             </div>
           </div>
 
-          <Card className="w-full rounded-3xl border border-white/40 bg-white/80 shadow-card backdrop-blur">
+          <Card className="w-full rounded-3xl border border-border/60 bg-card/95 shadow-card backdrop-blur">
             <CardHeader>
               <CardTitle className="text-2xl">
                 {mode === "login" ? "Sign in to continue" : "Create your account"}
@@ -109,7 +111,13 @@ export const AuthPage = () => {
                   />
                 </div>
                 <Button className="w-full" type="submit" disabled={loading}>
-                  {loading ? "Working..." : mode === "login" ? "Sign in" : "Create account"}
+                  {loading ? (
+                    <Skeleton className="mx-auto h-4 w-24" />
+                  ) : mode === "login" ? (
+                    "Sign in"
+                  ) : (
+                    "Create account"
+                  )}
                 </Button>
               </form>
               <div className="mt-6 flex items-center justify-between text-sm text-muted-foreground">
