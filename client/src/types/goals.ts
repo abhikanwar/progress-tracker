@@ -8,6 +8,30 @@ export type ProgressEvent = {
   createdAt: string;
 };
 
+export type GoalMilestone = {
+  id: string;
+  goalId: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Tag = {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: string;
+};
+
+export type GoalTag = {
+  id: string;
+  goalId: string;
+  tagId: string;
+  createdAt: string;
+  tag: Tag;
+};
+
 export type Goal = {
   id: string;
   title: string;
@@ -18,6 +42,8 @@ export type Goal = {
   createdAt: string;
   updatedAt: string;
   progressEvents: ProgressEvent[];
+  milestones: GoalMilestone[];
+  goalTags: GoalTag[];
 };
 
 export type GoalInput = {
@@ -34,4 +60,13 @@ export type GoalUpdate = Partial<GoalInput> & {
 export type ProgressInput = {
   value: number;
   note?: string;
+};
+
+export type MilestoneInput = {
+  title: string;
+};
+
+export type MilestoneUpdate = {
+  title?: string;
+  completed?: boolean;
 };

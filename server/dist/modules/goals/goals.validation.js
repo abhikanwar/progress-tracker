@@ -15,3 +15,17 @@ export const addProgressSchema = z.object({
     value: z.number().int().min(0).max(100),
     note: z.string().max(500).optional(),
 });
+export const createMilestoneSchema = z.object({
+    title: z.string().min(1).max(200),
+});
+export const updateMilestoneSchema = z
+    .object({
+    title: z.string().min(1).max(200).optional(),
+    completed: z.boolean().optional(),
+})
+    .refine((payload) => payload.title !== undefined || payload.completed !== undefined, {
+    message: "At least one field must be provided",
+});
+export const addTagSchema = z.object({
+    name: z.string().min(1).max(50),
+});

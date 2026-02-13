@@ -32,6 +32,40 @@ export const goalsController = {
     res.status(201).json(event);
   },
 
+  addMilestone: async (req: AuthenticatedRequest, res: Response) => {
+    const milestone = await goalsService.addMilestone(req.user.id, req.params.id, req.body);
+    res.status(201).json(milestone);
+  },
+
+  updateMilestone: async (req: AuthenticatedRequest, res: Response) => {
+    const milestone = await goalsService.updateMilestone(
+      req.user.id,
+      req.params.milestoneId,
+      req.body
+    );
+    res.json(milestone);
+  },
+
+  removeMilestone: async (req: AuthenticatedRequest, res: Response) => {
+    await goalsService.removeMilestone(req.user.id, req.params.milestoneId);
+    res.status(204).send();
+  },
+
+  listTags: async (req: AuthenticatedRequest, res: Response) => {
+    const tags = await goalsService.listTags(req.user.id);
+    res.json(tags);
+  },
+
+  addTag: async (req: AuthenticatedRequest, res: Response) => {
+    const goalTag = await goalsService.addTag(req.user.id, req.params.id, req.body);
+    res.status(201).json(goalTag);
+  },
+
+  removeTag: async (req: AuthenticatedRequest, res: Response) => {
+    await goalsService.removeTag(req.user.id, req.params.id, req.params.tagId);
+    res.status(204).send();
+  },
+
   remove: async (req: AuthenticatedRequest, res: Response) => {
     await goalsService.remove(req.user.id, req.params.id);
     res.status(204).send();

@@ -1,4 +1,15 @@
-import type { Goal, GoalInput, GoalUpdate, ProgressEvent, ProgressInput } from "../types/goals";
+import type {
+  Goal,
+  GoalInput,
+  GoalMilestone,
+  GoalTag,
+  Tag,
+  GoalUpdate,
+  MilestoneInput,
+  MilestoneUpdate,
+  ProgressEvent,
+  ProgressInput,
+} from "../types/goals";
 import { authStorage } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -55,6 +66,30 @@ export const goalsApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  addMilestone: (id: string, payload: MilestoneInput) =>
+    apiFetch<GoalMilestone>(`/goals/${id}/milestones`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateMilestone: (goalId: string, milestoneId: string, payload: MilestoneUpdate) =>
+    apiFetch<GoalMilestone>(`/goals/${goalId}/milestones/${milestoneId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  removeMilestone: (goalId: string, milestoneId: string) =>
+    apiFetch<void>(`/goals/${goalId}/milestones/${milestoneId}`, {
+      method: "DELETE",
+    }),
+  listTags: () => apiFetch<Tag[]>("/goals/tags"),
+  addTag: (goalId: string, name: string) =>
+    apiFetch<GoalTag>(`/goals/${goalId}/tags`, {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  removeTag: (goalId: string, tagId: string) =>
+    apiFetch<void>(`/goals/${goalId}/tags/${tagId}`, {
+      method: "DELETE",
+    }),
 };
 
 export const authApi = {
@@ -74,4 +109,11 @@ export const authApi = {
         body: JSON.stringify(payload),
       }
     ),
+  me: () =>
+    apiFetch<{ id: string; email: string; createdAt: string }>("/auth/me"),
+  changePassword: (payload: { currentPassword: string; newPassword: string }) =>
+    apiFetch<void>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

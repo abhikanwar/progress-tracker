@@ -16,7 +16,7 @@ import {
 } from "../ui/sidebar";
 
 const navItems = [
-  { label: "Dashboard", to: "/", icon: LayoutGrid },
+  { label: "Focus", to: "/", icon: LayoutGrid },
   { label: "Analytics", to: "/analytics", icon: BarChart3 },
   { label: "Calendar", to: "/calendar", icon: Calendar },
   { label: "Settings", to: "/settings", icon: Settings },
@@ -57,7 +57,7 @@ export const Sidebar = () => {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarMenu>
             {navItems.map((item) => {
               const Icon = item.icon;

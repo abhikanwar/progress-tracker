@@ -28,4 +28,32 @@ export const authService = {
         const token = jwt.sign({ sub: user.id }, env.jwtSecret, { expiresIn: "7d" });
         return { token, user: { id: user.id, email: user.email } };
     },
+    me: async (userId) => {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true, createdAt: true },
+        });
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
+    },
+    changePassword: async (userId, currentPassword, newPassword) => {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new Error("User not found");
+        }
+        const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+        if (!ok) {
+            throw new Error("Current password is incorrect");
+        }
+        if (currentPassword === newPassword) {
+            throw new Error("New password must be different");
+        }
+        const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+        await prisma.user.update({
+            where: { id: userId },
+            data: { passwordHash },
+        });
+    },
 };

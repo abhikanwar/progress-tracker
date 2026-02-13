@@ -24,12 +24,54 @@ model Goal {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   progressEvents   ProgressEvent[]
+  milestones       GoalMilestone[]
+  goalTags         GoalTag[]
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([targetDate])
   @@index([userId])
   @@unique([id, userId])
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime  @default(now())
+  goalTags  GoalTag[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model GoalTag {
+  id        String   @id @default(uuid())
+  goalId    String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, tagId])
+  @@index([goalId])
+  @@index([tagId])
+}
+
+model GoalMilestone {
+  id        String   @id @default(uuid())
+  goalId    String
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([completed])
 }
 
 model ProgressEvent {
@@ -52,4 +94,5 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   goals        Goal[]
+  tags         Tag[]
 }

@@ -3,10 +3,18 @@ import { goalsApi } from "../lib/api";
 import type { Goal } from "../types/goals";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../components/ui/button";
+import {
+  formatDateInTimezone,
+  getDateKeyInTimezone,
+  getDayDifferenceFromTodayInTimezone,
+} from "../lib/datetime";
+import { settingsStorage } from "../lib/settings";
 
 export const Analytics = () => {
+  const timezone = settingsStorage.getResolvedTimezone();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [presentationMode, setPresentationMode] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -25,17 +33,19 @@ export const Analytics = () => {
     const total = goals.length;
     const completed = goals.filter((g) => g.status === "COMPLETED").length;
     const active = goals.filter((g) => g.status === "ACTIVE").length;
+    const archived = goals.filter((g) => g.status === "ARCHIVED").length;
     const avgProgress = total
       ? Math.round(goals.reduce((sum, g) => sum + g.currentProgress, 0) / total)
       : 0;
-    return { total, completed, active, avgProgress };
+    return { total, completed, active, archived, avgProgress };
   }, [goals]);
 
   const activity = useMemo(() => {
     const dayMap = new Map<string, number>();
     goals.forEach((goal) => {
       goal.progressEvents?.forEach((event) => {
-        const key = event.createdAt.slice(0, 10);
+        const key = getDateKeyInTimezone(event.createdAt, timezone);
+        if (!key) return;
         dayMap.set(key, (dayMap.get(key) ?? 0) + 1);
       });
     });
@@ -47,7 +57,7 @@ export const Analytics = () => {
     for (let i = 0; i < 28; i += 1) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
-      const key = date.toISOString().slice(0, 10);
+      const key = getDateKeyInTimezone(date, timezone) ?? "";
       days.push({ key, date, count: dayMap.get(key) ?? 0 });
     }
 
@@ -69,26 +79,114 @@ export const Analytics = () => {
     const weekly = Array.from({ length: 7 }, (_, idx) => {
       const date = new Date(weekStart);
       date.setDate(weekStart.getDate() + idx);
-      const key = date.toISOString().slice(0, 10);
+      const key = getDateKeyInTimezone(date, timezone) ?? "";
       return { date, count: dayMap.get(key) ?? 0 };
     });
 
     return { days, streaks, weekly };
-  }, [goals]);
+  }, [goals, timezone]);
+
+  const executive = useMemo(() => {
+    const isOverdue = (goal: Goal) => {
+      const diff = getDayDifferenceFromTodayInTimezone(goal.targetDate ?? "", timezone);
+      return diff !== null && diff < 0;
+    };
+
+    const activeGoals = goals.filter((goal) => goal.status === "ACTIVE");
+    const overdue = activeGoals.filter((goal) => goal.targetDate && isOverdue(goal)).length;
+    const atRisk = overdue;
+    const onTrack = Math.max(activeGoals.length - atRisk, 0);
+    const completionRate = summary.total
+      ? Math.round((summary.completed / summary.total) * 100)
+      : 0;
+
+    const rollingCurrent = activity.days.slice(-7).reduce((sum, day) => sum + day.count, 0);
+    const rollingPrevious = activity.days
+      .slice(-14, -7)
+      .reduce((sum, day) => sum + day.count, 0);
+
+    const percentDelta = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const currentWeekKeys = new Set(activity.days.slice(-7).map((day) => day.key));
+    const previousWeekKeys = new Set(activity.days.slice(-14, -7).map((day) => day.key));
+
+    const completedThisWeek = goals.filter((goal) => {
+      if (goal.status !== "COMPLETED") return false;
+      const key = getDateKeyInTimezone(goal.updatedAt, timezone);
+      return key ? currentWeekKeys.has(key) : false;
+    }).length;
+
+    const completedLastWeek = goals.filter((goal) => {
+      if (goal.status !== "COMPLETED") return false;
+      const key = getDateKeyInTimezone(goal.updatedAt, timezone);
+      return key ? previousWeekKeys.has(key) : false;
+    }).length;
+
+    const momentumScore = Math.min(
+      100,
+      Math.round(
+        rollingCurrent * 8 + activity.streaks.current * 4 + Math.round(completionRate * 0.4)
+      )
+    );
+
+    return {
+      overdue,
+      atRisk,
+      onTrack,
+      completionRate,
+      rollingCurrent,
+      rollingPrevious,
+      updatesDelta: percentDelta(rollingCurrent, rollingPrevious),
+      completedThisWeek,
+      completedLastWeek,
+      completedDelta: percentDelta(completedThisWeek, completedLastWeek),
+      momentumScore,
+    };
+  }, [activity.days, activity.streaks.current, goals, summary.completed, summary.total, timezone]);
+
+  const donutStyle = useMemo(() => {
+    const total = executive.onTrack + executive.atRisk + summary.completed;
+    if (total === 0) {
+      return { background: "conic-gradient(#e2e8f0 0deg 360deg)" };
+    }
+
+    const completedDeg = (summary.completed / total) * 360;
+    const onTrackDeg = (executive.onTrack / total) * 360;
+    const atRiskDeg = (executive.atRisk / total) * 360;
+    return {
+      background: `conic-gradient(
+        #10b981 0deg ${completedDeg}deg,
+        #3b82f6 ${completedDeg}deg ${completedDeg + onTrackDeg}deg,
+        #ef4444 ${completedDeg + onTrackDeg}deg ${completedDeg + onTrackDeg + atRiskDeg}deg
+      )`,
+    };
+  }, [executive.atRisk, executive.onTrack, summary.completed]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Analytics</p>
-        <h1 className="text-3xl font-semibold">Progress trends</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Analytics</p>
+          <h1 className="text-3xl font-semibold">Executive snapshot</h1>
+        </div>
+        <Button
+          variant={presentationMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setPresentationMode((prev) => !prev)}
+        >
+          {presentationMode ? "Presentation mode on" : "Presentation mode"}
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Total goals", value: summary.total },
-          { label: "Active", value: summary.active },
-          { label: "Completed", value: summary.completed },
-          { label: "Avg progress", value: `${summary.avgProgress}%` },
+          { label: "On track", value: executive.onTrack },
+          { label: "At risk", value: executive.atRisk },
+          { label: "Completion rate", value: `${executive.completionRate}%` },
+          { label: "Momentum score", value: executive.momentumScore },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardHeader>
@@ -99,6 +197,65 @@ export const Analytics = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Week-over-week performance</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-border/70 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Updates</p>
+              <p className="mt-2 text-3xl font-semibold">{executive.rollingCurrent}</p>
+              <p className="text-xs text-muted-foreground">
+                Last 7 days vs previous 7 days: {executive.updatesDelta >= 0 ? "+" : ""}
+                {executive.updatesDelta}%
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/70 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                Goals completed
+              </p>
+              <p className="mt-2 text-3xl font-semibold">{executive.completedThisWeek}</p>
+              <p className="text-xs text-muted-foreground">
+                Last 7 days vs previous 7 days: {executive.completedDelta >= 0 ? "+" : ""}
+                {executive.completedDelta}%
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Status distribution</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-6">
+            <div className="relative h-32 w-32 rounded-full" style={donutStyle}>
+              <div className="absolute inset-4 grid place-items-center rounded-full bg-card text-xs font-medium">
+                {summary.total}
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <p className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                Completed: {summary.completed}
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                On track: {executive.onTrack}
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                At risk: {executive.atRisk}
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                Archived: {summary.archived}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -127,7 +284,7 @@ export const Analytics = () => {
                         className={`h-12 rounded-xl ${
                           day.count === 0 ? "bg-muted" : intensity
                         }`}
-                        title={`${day.date.toLocaleDateString()} • ${day.count} updates`}
+                        title={`${formatDateInTimezone(day.date, timezone)} • ${day.count} updates`}
                       />
                     );
                   })}
@@ -162,32 +319,35 @@ export const Analytics = () => {
               </Card>
             </div>
 
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Weekly summary
-              </p>
-              <div className="mt-3 space-y-2">
-                {activity.weekly.map((day) => (
-                  <div key={day.date.toISOString()} className="flex items-center gap-3 text-sm">
-                    <span className="w-16 text-muted-foreground">
-                      {day.date.toLocaleDateString(undefined, { weekday: "short" })}
-                    </span>
-                    <div className="h-2 flex-1 rounded-full bg-muted">
-                      <div
-                        className="h-2 rounded-full bg-foreground"
-                        style={{ width: `${Math.min(day.count * 20, 100)}%` }}
-                      />
+            {!presentationMode && (
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Weekly summary
+                </p>
+                <div className="mt-3 space-y-2">
+                  {activity.weekly.map((day) => (
+                    <div key={day.date.toISOString()} className="flex items-center gap-3 text-sm">
+                      <span className="w-16 text-muted-foreground">
+                        {formatDateInTimezone(day.date, timezone, { weekday: "short" })}
+                      </span>
+                      <div className="h-2 flex-1 rounded-full bg-muted">
+                        <div
+                          className="h-2 rounded-full bg-foreground"
+                          style={{ width: `${Math.min(day.count * 20, 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-right text-muted-foreground">{day.count}</span>
                     </div>
-                    <span className="w-8 text-right text-muted-foreground">{day.count}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      {!presentationMode && (
+        <Card>
         <CardHeader>
           <CardTitle className="text-base">Latest goal updates</CardTitle>
         </CardHeader>
@@ -208,7 +368,8 @@ export const Analytics = () => {
             ))}
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };

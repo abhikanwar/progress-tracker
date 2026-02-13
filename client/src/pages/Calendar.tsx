@@ -4,18 +4,38 @@ import type { Goal } from "../types/goals";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { toast } from "sonner";
+import {
+  formatDateInTimezone,
+  getDateKeyInTimezone,
+  getDayDifferenceFromTodayInTimezone,
+} from "../lib/datetime";
+import { settingsStorage } from "../lib/settings";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
 const endOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-const formatDateKey = (date: Date) => date.toISOString().slice(0, 10);
+const formatDateKey = (date: Date, timezone: string) => getDateKeyInTimezone(date, timezone) ?? "";
 
-const formatMonthLabel = (date: Date) =>
-  date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+const formatMonthLabel = (date: Date, timezone: string) =>
+  formatDateInTimezone(date, timezone, { month: "long", year: "numeric", day: undefined });
+
+const getDueState = (
+  goal: Pick<Goal, "status" | "targetDate">,
+  timezone: string
+): "OVERDUE" | "DUE_SOON" | null => {
+  if (!goal.targetDate || goal.status !== "ACTIVE") return null;
+  const diffDays = getDayDifferenceFromTodayInTimezone(goal.targetDate, timezone);
+  if (diffDays === null) return null;
+
+  if (diffDays < 0) return "OVERDUE";
+  if (diffDays <= 7) return "DUE_SOON";
+  return null;
+};
 
 export const CalendarPage = () => {
+  const timezone = settingsStorage.getResolvedTimezone();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
@@ -59,16 +79,16 @@ export const CalendarPage = () => {
     const goalsDue = new Map<string, Goal[]>();
     goals.forEach((goal) => {
       if (goal.targetDate) {
-        const key = formatDateKey(new Date(goal.targetDate));
+        const key = formatDateKey(new Date(goal.targetDate), timezone);
         goalsDue.set(key, [...(goalsDue.get(key) ?? []), goal]);
       }
       goal.progressEvents?.forEach((event) => {
-        const key = formatDateKey(new Date(event.createdAt));
+        const key = formatDateKey(new Date(event.createdAt), timezone);
         events.set(key, (events.get(key) ?? 0) + 1);
       });
     });
     return { eventsByDay: events, goalsByDay: goalsDue };
-  }, [goals]);
+  }, [goals, timezone]);
 
   const weekSummary = useMemo(() => {
     const now = new Date();
@@ -77,12 +97,12 @@ export const CalendarPage = () => {
     const days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
-      const key = formatDateKey(date);
+      const key = formatDateKey(date, timezone);
       return eventsByDay.get(key) ?? 0;
     });
     const total = days.reduce((sum, value) => sum + value, 0);
     return { total, days };
-  }, [eventsByDay]);
+  }, [eventsByDay, timezone]);
 
   return (
     <div className="space-y-6">
@@ -95,7 +115,7 @@ export const CalendarPage = () => {
         <Card>
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-base">{formatMonthLabel(monthCursor)}</CardTitle>
+              <CardTitle className="text-base">{formatMonthLabel(monthCursor, timezone)}</CardTitle>
               <p className="text-xs text-muted-foreground">Targets and progress activity.</p>
             </div>
             <div className="flex gap-2">
@@ -131,7 +151,7 @@ export const CalendarPage = () => {
                 </div>
                 <div className="mt-3 grid grid-cols-7 gap-2">
                   {calendarDays.map((date) => {
-                    const key = formatDateKey(date);
+                    const key = formatDateKey(date, timezone);
                     const isCurrentMonth = date.getMonth() === monthCursor.getMonth();
                     const eventCount = eventsByDay.get(key) ?? 0;
                     const dueGoals = goalsByDay.get(key) ?? [];
@@ -158,7 +178,11 @@ export const CalendarPage = () => {
                           {dueGoals.slice(0, 2).map((goal) => (
                             <div
                               key={goal.id}
-                              className="truncate rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700"
+                              className={`truncate rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                getDueState(goal, timezone) === "OVERDUE"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
+                              }`}
                             >
                               {goal.title}
                             </div>
@@ -211,7 +235,7 @@ export const CalendarPage = () => {
             <CardContent>
               <div className="space-y-3 text-sm">
                 {goals
-                  .filter((goal) => goal.targetDate)
+                  .filter((goal) => goal.targetDate && goal.status === "ACTIVE")
                   .sort(
                     (a, b) =>
                       new Date(a.targetDate ?? 0).getTime() - new Date(b.targetDate ?? 0).getTime()
@@ -219,13 +243,28 @@ export const CalendarPage = () => {
                   .slice(0, 5)
                   .map((goal) => (
                     <div key={goal.id} className="flex items-center justify-between">
-                      <span className="font-medium">{goal.title}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{goal.title}</span>
+                        {getDueState(goal, timezone) && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              getDueState(goal, timezone) === "OVERDUE"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {getDueState(goal, timezone) === "OVERDUE" ? "Overdue" : "Due this week"}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(goal.targetDate ?? "").toLocaleDateString()}
+                        {goal.targetDate ? formatDateInTimezone(goal.targetDate, timezone) : "—"}
                       </span>
                     </div>
                   ))}
-                {!loading && goals.filter((goal) => goal.targetDate).length === 0 && (
+                {!loading &&
+                  goals.filter((goal) => goal.targetDate && goal.status === "ACTIVE").length ===
+                    0 && (
                   <p className="text-sm text-muted-foreground">No targets yet.</p>
                 )}
               </div>
