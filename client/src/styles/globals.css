@@ -8,18 +8,31 @@
   color-scheme: light;
   --background: 210 30% 98%;
   --foreground: 222 47% 11%;
-  --card: 0 0% 100% / 0.8;
+  --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
   --muted: 210 20% 94%;
   --muted-foreground: 215 16% 46%;
   --border: 214 20% 89%;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 320ms;
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark {
   color-scheme: dark;
   --background: 222 32% 10%;
   --foreground: 210 20% 96%;
-  --card: 222 28% 14% / 0.85;
+  --card: 222 28% 14%;
   --card-foreground: 210 20% 96%;
   --muted: 222 16% 20%;
   --muted-foreground: 215 12% 65%;
@@ -28,6 +41,11 @@
 
 * {
   box-sizing: border-box;
+}
+
+*:focus-visible {
+  outline: 2px solid hsl(var(--foreground) / 0.26);
+  outline-offset: 2px;
 }
 
 html, body, #root {
@@ -39,6 +57,7 @@ body {
   font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, sans-serif;
   color: hsl(var(--foreground));
   background: radial-gradient(circle at top, #f7f9fc, #eef3fb 40%, #e6edf8 100%);
+  overflow-x: hidden;
 }
 
 .dark body {
@@ -60,6 +79,30 @@ body {
 
 .shadow-card {
   box-shadow: 0 18px 40px -28px rgba(15, 26, 42, 0.45);
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.ui-transition {
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-smooth);
 }
 
 @media (max-width: 900px) {
@@ -145,12 +188,6 @@ body {
   animation: shimmer-slide 1.4s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .shimmer-skeleton::after {
-    animation: none;
-  }
-}
-
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -163,12 +200,12 @@ body {
 }
 
 .motion-enter {
-  animation: fade-up 420ms ease-out both;
+  animation: fade-up var(--motion-slow) var(--ease-smooth) both;
 }
 
 .stagger-children > * {
   opacity: 0;
-  animation: fade-up 420ms ease-out both;
+  animation: fade-up var(--motion-slow) var(--ease-smooth) both;
 }
 
 .stagger-children > *:nth-child(1) { animation-delay: 30ms; }
@@ -195,4 +232,30 @@ body {
 .section-title {
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  a {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .shimmer-skeleton::after {
+    animation: none;
+  }
 }

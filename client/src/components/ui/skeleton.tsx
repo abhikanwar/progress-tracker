@@ -6,7 +6,8 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("shimmer-skeleton", className)}
+      aria-hidden="true"
+      className={cn("shimmer-skeleton ui-transition", className)}
       {...props}
     />
   )

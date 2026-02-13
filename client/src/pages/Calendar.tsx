@@ -107,9 +107,11 @@ export const CalendarPage = () => {
 
   return (
     <div className="space-y-6 motion-enter">
-      <div>
-        <p className="page-kicker">Calendar</p>
-        <h1 className="page-title">Schedule your goals</h1>
+      <div className="page-header">
+        <div>
+          <p className="page-kicker">Calendar</p>
+          <h1 className="page-title">Schedule your goals</h1>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_0.9fr] stagger-children">
@@ -164,7 +166,7 @@ export const CalendarPage = () => {
                     <div
                       key={key}
                       className={`min-h-[72px] rounded-lg border border-border/60 p-1 text-[10px] sm:min-h-[96px] sm:rounded-2xl sm:p-2 sm:text-xs ${
-                        isCurrentMonth ? "bg-card/70" : "bg-muted/30 text-muted-foreground"
+                        isCurrentMonth ? "bg-card" : "bg-muted/30 text-muted-foreground"
                       }`}
                     >
                       <div className="flex items-center justify-between">

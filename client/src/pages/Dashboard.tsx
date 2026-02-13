@@ -139,6 +139,23 @@ export const Dashboard = () => {
   });
   const [formErrors, setFormErrors] = useState<{ title?: string }>({});
 
+  const createTempGoal = (payload: GoalInput): Goal => {
+    const now = new Date().toISOString();
+    return {
+      id: `temp-${Date.now()}`,
+      title: payload.title,
+      details: payload.details ?? null,
+      status: "ACTIVE",
+      targetDate: payload.targetDate ?? null,
+      currentProgress: 0,
+      createdAt: now,
+      updatedAt: now,
+      progressEvents: [],
+      milestones: [],
+      goalTags: [],
+    };
+  };
+
   const loadGoals = async () => {
     try {
       setLoading(true);
@@ -286,28 +303,48 @@ export const Dashboard = () => {
         : undefined,
     };
 
+    const previousGoals = goals;
+    setDialogOpen(false);
+
     try {
       if (editingGoal) {
+        setGoals((prev) =>
+          prev.map((goal) =>
+            goal.id === editingGoal.id
+              ? {
+                  ...goal,
+                  title: payload.title,
+                  details: payload.details ?? null,
+                  targetDate: payload.targetDate ?? null,
+                  updatedAt: new Date().toISOString(),
+                }
+              : goal
+          )
+        );
         await goalsApi.update(editingGoal.id, payload);
         toast.success("Goal updated.");
       } else {
+        const tempGoal = createTempGoal(payload);
+        setGoals((prev) => [tempGoal, ...prev]);
         await goalsApi.create(payload);
         toast.success("Goal created.");
       }
-      setDialogOpen(false);
-      await loadGoals();
+      void loadGoals();
     } catch (err) {
+      setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to save goal";
       toast.error(message);
     }
   };
 
   const handleDelete = async (goal: Goal) => {
+    const previousGoals = goals;
+    setGoals((prev) => prev.filter((item) => item.id !== goal.id));
     try {
       await goalsApi.remove(goal.id);
       toast.success("Goal deleted.");
-      await loadGoals();
     } catch (err) {
+      setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to delete goal";
       toast.error(message);
     }
@@ -323,16 +360,40 @@ export const Dashboard = () => {
   const handleProgressSubmit = async () => {
     if (!progressGoal) return;
 
+    const previousGoals = goals;
+    const now = new Date().toISOString();
+    const tempEvent: ProgressEvent = {
+      id: `temp-progress-${Date.now()}`,
+      goalId: progressGoal.id,
+      value: progressValue,
+      note: progressNote.trim() || null,
+      createdAt: now,
+    };
+
+    setGoals((prev) =>
+      prev.map((goal) =>
+        goal.id === progressGoal.id
+          ? {
+              ...goal,
+              currentProgress: progressValue,
+              updatedAt: now,
+              progressEvents: [tempEvent, ...(goal.progressEvents ?? [])],
+            }
+          : goal
+      )
+    );
+    setProgressDialogOpen(false);
+    setProgressGoal(null);
+
     try {
       await goalsApi.addProgress(progressGoal.id, {
         value: progressValue,
         note: progressNote.trim() || undefined,
       });
       toast.success("Progress updated.");
-      setProgressDialogOpen(false);
-      setProgressGoal(null);
-      await loadGoals();
+      void loadGoals();
     } catch (err) {
+      setGoals(previousGoals);
       const message = err instanceof Error ? err.message : "Failed to update progress";
       toast.error(message);
     }
@@ -342,12 +403,33 @@ export const Dashboard = () => {
     const title = (milestoneDrafts[goal.id] ?? "").trim();
     if (!title) return;
 
+    const previousGoals = goals;
+    const now = new Date().toISOString();
+    const tempMilestone = {
+      id: `temp-ms-${Date.now()}`,
+      goalId: goal.id,
+      title,
+      completed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: "" }));
+    setGoals((prev) =>
+      prev.map((item) =>
+        item.id === goal.id
+          ? { ...item, milestones: [tempMilestone, ...(item.milestones ?? [])] }
+          : item
+      )
+    );
+
     try {
       await goalsApi.addMilestone(goal.id, { title });
-      setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: "" }));
       toast.success("Milestone added.");
-      await loadGoals();
+      void loadGoals();
     } catch (err) {
+      setGoals(previousGoals);
+      setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: title }));
       const message = err instanceof Error ? err.message : "Failed to add milestone";
       toast.error(message);
     }
@@ -405,12 +487,14 @@ export const Dashboard = () => {
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-hidden motion-enter">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header className="page-header">
         <div>
           <p className="page-kicker">Focus</p>
           <h1 className="page-title">Weekly execution</h1>
         </div>
-        <Button onClick={openCreate}>New goal</Button>
+        <div className="page-actions">
+          <Button onClick={openCreate}>New goal</Button>
+        </div>
       </header>
 
       <Card className="motion-enter">

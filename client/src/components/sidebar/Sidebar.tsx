@@ -35,7 +35,7 @@ export const Sidebar = () => {
       <SidebarHeader>
         <div className="flex items-center gap-2 overflow-hidden px-2">
           <div className="flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary/90 text-sidebar-primary-foreground shadow-[0_10px_18px_-12px_rgba(15,23,42,0.7)] group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
               PT
             </div>
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">

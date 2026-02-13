@@ -104,9 +104,16 @@ export const SettingsPage = () => {
 
   return (
     <div className="space-y-6 motion-enter">
-      <div>
-        <p className="page-kicker">Settings</p>
-        <h1 className="page-title">Preferences</h1>
+      <div className="page-header">
+        <div>
+          <p className="page-kicker">Settings</p>
+          <h1 className="page-title">Preferences</h1>
+        </div>
+        <div className="page-actions">
+          <Button variant="outline" onClick={handleLogout}>
+            Log out
+          </Button>
+        </div>
       </div>
 
       <Card className="motion-enter">
@@ -216,9 +223,6 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      <Button variant="outline" onClick={handleLogout}>
-        Log out
-      </Button>
     </div>
   );
 };

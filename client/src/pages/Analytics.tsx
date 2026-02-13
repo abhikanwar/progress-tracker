@@ -10,6 +10,7 @@ import {
 } from "../lib/datetime";
 import { settingsStorage } from "../lib/settings";
 import { Skeleton } from "../components/ui/skeleton";
+import { CalloutPanel, MetricCard, TrendBadge } from "../components/ui/demo-blocks";
 
 export const Analytics = () => {
   const timezone = settingsStorage.getResolvedTimezone();
@@ -168,18 +169,20 @@ export const Analytics = () => {
 
   return (
     <div className="space-y-6 motion-enter">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="page-header">
         <div>
           <p className="page-kicker">Analytics</p>
           <h1 className="page-title">Executive snapshot</h1>
         </div>
-        <Button
-          variant={presentationMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setPresentationMode((prev) => !prev)}
-        >
-          {presentationMode ? "Presentation mode on" : "Presentation mode"}
-        </Button>
+        <div className="page-actions">
+          <Button
+            variant={presentationMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPresentationMode((prev) => !prev)}
+          >
+            {presentationMode ? "Presentation mode on" : "Presentation mode"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 stagger-children">
@@ -189,14 +192,7 @@ export const Analytics = () => {
           { label: "Completion rate", value: `${executive.completionRate}%` },
           { label: "Momentum score", value: executive.momentumScore },
         ].map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">{stat.label}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold">
-              {loading ? <Skeleton className="h-8 w-20" /> : stat.value}
-            </CardContent>
-          </Card>
+          <MetricCard key={stat.label} label={stat.label} value={stat.value} loading={loading} />
         ))}
       </div>
 
@@ -212,9 +208,9 @@ export const Analytics = () => {
                 {loading ? <Skeleton className="h-8 w-24" /> : executive.rollingCurrent}
               </p>
               <p className="text-xs text-muted-foreground">
-                Last 7 days vs previous 7 days: {executive.updatesDelta >= 0 ? "+" : ""}
-                {executive.updatesDelta}%
+                Last 7 days vs previous 7 days.
               </p>
+              {!loading && <TrendBadge value={executive.updatesDelta} label="vs prior" className="mt-2" />}
             </div>
             <div className="rounded-xl border border-border/70 p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
@@ -224,9 +220,9 @@ export const Analytics = () => {
                 {loading ? <Skeleton className="h-8 w-24" /> : executive.completedThisWeek}
               </p>
               <p className="text-xs text-muted-foreground">
-                Last 7 days vs previous 7 days: {executive.completedDelta >= 0 ? "+" : ""}
-                {executive.completedDelta}%
+                Last 7 days vs previous 7 days.
               </p>
+              {!loading && <TrendBadge value={executive.completedDelta} label="vs prior" className="mt-2" />}
             </div>
           </CardContent>
         </Card>
@@ -278,6 +274,10 @@ export const Analytics = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
+            <CalloutPanel
+              title={`Momentum score: ${executive.momentumScore}`}
+              description="Score blends recent updates, streak health, and completion rate for demo-friendly signal."
+            />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 28-day activity

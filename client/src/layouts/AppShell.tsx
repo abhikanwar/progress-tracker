@@ -60,6 +60,7 @@ const MobileQuickActions = () => {
           toast.error("Goal title is required.");
           return;
         }
+        setDialogOpen(false);
         await goalsApi.create({ title });
         setGoalTitle("");
         toast.success("Priority added.");
@@ -70,6 +71,7 @@ const MobileQuickActions = () => {
           toast.error("Select a goal first.");
           return;
         }
+        setDialogOpen(false);
         await goalsApi.addProgress(selectedGoalId, {
           value: Math.max(0, Math.min(100, progressValue)),
           note: progressNote.trim() || undefined,
@@ -88,12 +90,11 @@ const MobileQuickActions = () => {
           toast.error("Milestone title is required.");
           return;
         }
+        setDialogOpen(false);
         await goalsApi.addMilestone(selectedGoalId, { title });
         setMilestoneTitle("");
         toast.success("Milestone added.");
       }
-
-      setDialogOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Action failed";
       toast.error(message);
@@ -105,7 +106,7 @@ const MobileQuickActions = () => {
   return (
     <>
       <div className="fixed inset-x-0 bottom-4 z-40 px-4 md:hidden">
-        <Card className="mx-auto max-w-md border border-border/70 bg-card/95 shadow-card backdrop-blur">
+        <Card className="mx-auto max-w-md">
           <CardContent className="grid grid-cols-3 gap-2 p-2">
             <Button size="sm" onClick={() => openAction("goal")}>
               + Goal
@@ -203,7 +204,7 @@ const MobileQuickActions = () => {
             )}
 
             <div className="flex justify-end">
-              <Button onClick={submit} disabled={submitting}>
+              <Button onClick={submit} disabled={submitting} aria-busy={submitting}>
                 {submitting ? "Saving..." : "Save"}
               </Button>
             </div>

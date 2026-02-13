@@ -45,7 +45,7 @@ export const AuthPage = () => {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-6 py-16">
         <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="hidden flex-col justify-center gap-6 rounded-3xl border border-border/60 bg-card/90 p-10 shadow-card backdrop-blur lg:flex">
+          <div className="hidden flex-col justify-center gap-6 rounded-3xl border border-border/60 bg-card p-10 shadow-card lg:flex">
             <div className="inline-flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-foreground text-background">
                 <div className="flex h-full w-full items-center justify-center text-lg font-semibold">
@@ -64,16 +64,16 @@ export const AuthPage = () => {
               highlights your wins.
             </p>
             <div className="grid gap-4 text-sm text-muted-foreground">
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+              <div className="rounded-2xl border border-border/60 bg-background p-4">
                 “It feels like a calm, organized sprint each day.”
               </div>
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+              <div className="rounded-2xl border border-border/60 bg-background p-4">
                 Weekly focus, quick updates, and a snapshot of what matters most.
               </div>
             </div>
           </div>
 
-          <Card className="w-full rounded-3xl border border-border/60 bg-card/95 shadow-card backdrop-blur">
+          <Card className="w-full rounded-3xl border border-border/60 bg-card shadow-card">
             <CardHeader>
               <CardTitle className="text-2xl leading-tight">
                 {mode === "login" ? "Sign in to continue" : "Create your account"}
